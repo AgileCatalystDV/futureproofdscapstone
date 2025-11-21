@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  slack-bot:
+    build: .
+    container_name: capstone-slackbot
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - SLACK_CHANNEL=${SLACK_CHANNEL:-#general}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # Postgres (when ready)
+      - POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./semantic_model:/app/semantic_model
+    restart: unless-stopped
+    networks:
+      - capstone-network
+
+  # MCP Server (optional separate service)
+  mcp-server:
+    build: .
+    container_name: capstone-mcp-server
+    command: python -m mcp_server.server
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./semantic_model:/app/semantic_model
+    stdin_open: true
+    tty: true
+    networks:
+      - capstone-network
+
+networks:
+  capstone-network:
+    driver: bridge
+

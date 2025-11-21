@@ -1,0 +1,55 @@
+# Guardrails Configuration
+# Hard rules for query validation
+
+allowed_tables:
+  users:
+    allowed_columns:
+      - user_id
+      - signup_date
+      - country
+      - device_type
+    sensitivity: public
+  
+  subscriptions:
+    allowed_columns:
+      - subscription_id
+      - user_id
+      - plan
+      - start_date
+      - end_date
+      - status
+    sensitivity: sensitive
+  
+  payments:
+    allowed_columns:
+      - payment_id
+      - subscription_id
+      - payment_date
+      - amount_usd
+      - method
+    sensitivity: public
+  
+  sessions:
+    allowed_columns:
+      - session_id
+      - user_id
+      - session_date
+      - duration_minutes
+      - activity_type
+    sensitivity: public
+
+# Blocked SQL patterns (regex)
+blocked_patterns:
+  - "(?i)(DROP|DELETE|TRUNCATE|ALTER|CREATE|INSERT|UPDATE)"
+  - "(?i)(EXEC|EXECUTE|EXECUTE IMMEDIATE)"
+  - "(?i)(UNION.*SELECT|SELECT.*UNION)"
+  - "(?i)(--|/\*|\*/)"  # SQL comments
+  - "(?i)(;.*;)"  # Multiple statements
+
+# Complexity limits
+max_complexity:
+  max_joins: 2
+  max_subqueries: 1
+  max_rows_returned: 10000
+  max_query_length: 5000  # characters
+
