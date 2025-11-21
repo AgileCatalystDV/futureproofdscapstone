@@ -3,10 +3,15 @@
 import os
 from typing import Dict, Optional
 from pathlib import Path
+from dotenv import load_dotenv
 
 from mcp_server.tools.guardrails import GuardrailsValidator
 from mcp_server.tools.db_query import DatabaseQueryTool
 from mcp_server.tools.slack import SlackTool
+
+# Load .env file from project root
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 
 class PandaAIAgent:

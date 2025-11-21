@@ -14,41 +14,19 @@ This project is a 4-day capstone MVP that allows users to query a Postgres datab
 
 ## 🏗️ Architecture
 
+Zie [ARCHITECTURE.md](ARCHITECTURE.md) voor gedetailleerde Mermaid diagrammen.
+
+**High-level flow:**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     SLACK USER                              │
-│              "/query What payments did user X make?"        │
-└────────────────────────┬────────────────────────────────────┘
-                         ↓
-        ┌────────────────────────────────┐
-        │  SLACK BOT (Bolt Handler)      │
-        │  Receives slash command        │
-        └────────────┬───────────────────┘
-                     ↓
-        ┌────────────────────────────────────────┐
-        │  PANDAAI AGENT (Orchestrator)         │
-        │  - Validates query via guardrails      │
-        │  - Executes via PandaAI                │
-        │  - Returns formatted results            │
-        └────────────┬───────────────────────────┘
-                     ↓
-        ┌────────────────────────────────────────┐
-        │  GUARDRAILS VALIDATOR                 │
-        │  - Whitelist check (tables/columns)   │
-        │  - SQL injection pattern blocking      │
-        │  - Complexity limits                  │
-        └────────────┬───────────────────────────┘
-                     ↓
-        ┌────────────────────────────────────────┐
-        │  PANDAAI (GPT-4 mini)                 │
-        │  Natural language → SQL → Results     │
-        └────────────┬───────────────────────────┘
-                     ↓
-        ┌────────────────────────────────────────┐
-        │  POSTGRES DATABASE (Mock/Real)         │
-        │  Tables: users, subscriptions,          │
-        │          payments, sessions             │
-        └────────────────────────────────────────┘
+Slack User → Slack Bot → PandaAI Agent → Guardrails → PandaAI → Database
+```
+
+**Key Components:**
+- **Slack Bot Handler** - Receives commands and mentions
+- **PandaAI Agent** - Orchestrates query processing
+- **Guardrails Validator** - Security checks (whitelist, SQL injection, complexity)
+- **PandaAI** - Natural language → SQL translation (GPT-4 mini)
+- **Database** - Mock (development) or Real Postgres via MCP DatabaseToolbox
 ```
 
 ## 📁 Project Structure
@@ -91,10 +69,18 @@ capstone-slackbot/
    cd capstone-slackbot
    ```
 
-2. **Install dependencies:**
+2. **Install dependencies (Poetry - recommended):**
+   ```bash
+   poetry install
+   poetry shell  # Activeer environment
+   ```
+   
+   **Of met pip (fallback):**
    ```bash
    pip install -r requirements.txt
    ```
+   
+   Zie [POETRY_SETUP.md](POETRY_SETUP.md) voor Poetry setup details.
 
 3. **Set environment variables:**
    Create a `.env` file (see `.env.example`):

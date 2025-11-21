@@ -9,6 +9,10 @@ venv/
 ENV/
 .venv
 
+# Poetry
+poetry.lock  # Optioneel: commit dit wel voor reproduceerbare builds
+# .venv/ is al hierboven
+
 # Environment variables
 .env
 .env.local

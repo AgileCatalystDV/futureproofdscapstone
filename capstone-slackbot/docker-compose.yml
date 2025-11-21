@@ -15,8 +15,13 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # MCP DatabaseToolbox
+      - USE_MCP_DATABASE=${USE_MCP_DATABASE:-false}
+      - MCP_TOOLBOX_PATH=${MCP_TOOLBOX_PATH:-/usr/local/bin/toolbox}
+      - MCP_TOOLS_FILE=${MCP_TOOLS_FILE:-/app/tools.yaml}
     volumes:
       - ./semantic_model:/app/semantic_model
+      - ./tools.yaml:/app/tools.yaml:ro  # MCP DatabaseToolbox config (if exists)
     restart: unless-stopped
     networks:
       - capstone-network
@@ -33,8 +38,13 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # MCP DatabaseToolbox
+      - USE_MCP_DATABASE=${USE_MCP_DATABASE:-false}
+      - MCP_TOOLBOX_PATH=${MCP_TOOLBOX_PATH:-/usr/local/bin/toolbox}
+      - MCP_TOOLS_FILE=${MCP_TOOLS_FILE:-/app/tools.yaml}
     volumes:
       - ./semantic_model:/app/semantic_model
+      - ./tools.yaml:/app/tools.yaml:ro  # MCP DatabaseToolbox config (if exists)
     stdin_open: true
     tty: true
     networks:

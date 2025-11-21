@@ -13,8 +13,8 @@ openai>=1.0.0
 slack-sdk>=3.20.0
 slack-bolt>=1.18.0
 
-# MCP (if using MCP protocol)
-# mcp>=0.1.0  # Add when available
+# MCP (Model Context Protocol) - for DatabaseToolbox integration
+mcp>=0.1.0
 
 # Database (for real Postgres later)
 psycopg2-binary>=2.9.0

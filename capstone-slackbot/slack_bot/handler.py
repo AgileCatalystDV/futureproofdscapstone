@@ -2,10 +2,16 @@
 
 import os
 from typing import Optional
+from pathlib import Path
+from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 from agent.pandasai_agent import PandaAIAgent
+
+# Load .env file from project root
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 
 class SlackBotHandler:

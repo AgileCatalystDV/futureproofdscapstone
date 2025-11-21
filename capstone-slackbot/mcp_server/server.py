@@ -3,21 +3,33 @@
 import asyncio
 import json
 import sys
+import os
 from typing import Dict, Any, Optional
 from pathlib import Path
+from dotenv import load_dotenv
 
 from mcp_server.tools.guardrails import GuardrailsValidator
 from mcp_server.tools.db_query import DatabaseQueryTool
 from mcp_server.tools.slack import SlackTool
 
+# Load .env file from project root
+env_path = Path(__file__).parent.parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
+
 
 class MCPServer:
     """MCP Server that exposes tools for database querying via PandaAI"""
     
-    def __init__(self):
-        """Initialize MCP server with tools"""
+    def __init__(self, use_mock_db: bool = True, use_mcp_db: bool = False):
+        """
+        Initialize MCP server with tools
+        
+        Args:
+            use_mock_db: Use mock database (default: True)
+            use_mcp_db: Use MCP DatabaseToolbox (default: False)
+        """
         self.guardrails = GuardrailsValidator()
-        self.db_tool = DatabaseQueryTool(use_mock=True)  # Mock for now
+        self.db_tool = DatabaseQueryTool(use_mock=use_mock_db, use_mcp=use_mcp_db)
         self.slack_tool = SlackTool()
     
     async def handle_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
