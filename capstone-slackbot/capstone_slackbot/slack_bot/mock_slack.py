@@ -1,6 +1,7 @@
 """Mock Slack classes for development and testing"""
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+import os
 
 
 class MockSlackHandler:
@@ -113,10 +114,31 @@ class MockSlackTool:
             "message": text
         }
     
-    def post_result(self, query: str, result: any, error: Optional[str] = None, channel: Optional[str] = None) -> Dict:
-        """Post query result to mock Slack in formatted way"""
+    def upload_file(self, file_path: str, channel: Optional[str] = None, initial_comment: Optional[str] = None, thread_ts: Optional[str] = None) -> Dict:
+        """Mock upload file - just prints to console"""
+        target_channel = channel or self.default_channel
+        filename = os.path.basename(file_path)
+        
+        print(f"\n📎 [Mock Slack - {target_channel}] File Upload")
+        if initial_comment:
+            print(f"Comment: {initial_comment}")
+        print(f"File: {filename}")
+        if thread_ts:
+            print(f"Thread: {thread_ts}")
+        print()
+        
+        return {
+            "success": True,
+            "file_id": f"mock_file_{filename}",
+            "file_name": filename,
+            "channel": target_channel
+        }
+    
+    def post_result(self, query: str, result: any, error: Optional[str] = None, channel: Optional[str] = None, charts: Optional[List[str]] = None) -> Dict:
+        """Post query result to mock Slack in formatted way, optionally including charts"""
         if error:
             message = f"❌ Query failed: `{query}`\nError: {error}"
+            response = self.post_message(message, channel=channel)
         else:
             # Format result nicely
             if isinstance(result, (list, tuple)):
@@ -129,6 +151,24 @@ class MockSlackTool:
                 result_str = str(result)
             
             message = f"✅ Query: `{query}`\n\nResult:\n{result_str}"
+            response = self.post_message(message, channel=channel)
+            
+            # Upload charts if any were generated
+            if charts and response.get("success"):
+                thread_ts = response.get("ts")
+                uploaded_charts = []
+                for chart_path in charts:
+                    if os.path.exists(chart_path):
+                        chart_response = self.upload_file(
+                            chart_path,
+                            channel=channel,
+                            initial_comment="📊 Chart generated from query",
+                            thread_ts=thread_ts
+                        )
+                        uploaded_charts.append(chart_response)
+                
+                if uploaded_charts:
+                    response["charts"] = uploaded_charts
         
-        return self.post_message(message, channel=channel)
+        return response
 

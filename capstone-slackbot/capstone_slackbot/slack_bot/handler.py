@@ -90,10 +90,33 @@ class SlackBotHandler:
             if result["success"]:
                 query_result = result["query_result"]
                 response_text = f"✅ Query: `{query}`\n\nResult:\n{query_result['result']}"
+                
+                # Check if charts were generated
+                charts = query_result.get("charts")
+                if charts:
+                    response_text += f"\n\n📊 {len(charts)} chart(s) generated"
+                
+                # Check if charts were generated
+                charts = query_result.get("charts")
+                if charts:
+                    response_text += f"\n\n📊 {len(charts)} chart(s) generated"
+                
+                respond(response_text)
+                
+                # Upload charts if any were generated
+                if charts:
+                    from capstone_slackbot.mcp_server.tools.slack import SlackTool
+                    slack_tool = SlackTool()
+                    for chart_path in charts:
+                        if os.path.exists(chart_path):
+                            slack_tool.upload_file(
+                                chart_path,
+                                channel=command.get("channel_id"),
+                                initial_comment="📊 Chart generated from query"
+                            )
             else:
                 response_text = f"❌ Query failed: `{query}`\nError: {result.get('error', 'Unknown error')}"
-            
-            respond(response_text)
+                respond(response_text)
         
         @self.app.event("app_mention")
         def handle_mention(event, say):
@@ -114,7 +137,27 @@ class SlackBotHandler:
             
             if result["success"]:
                 query_result = result["query_result"]
-                say(f"✅ Query: `{query}`\n\nResult:\n{query_result['result']}")
+                response_text = f"✅ Query: `{query}`\n\nResult:\n{query_result['result']}"
+                
+                # Check if charts were generated
+                charts = query_result.get("charts")
+                if charts:
+                    response_text += f"\n\n📊 {len(charts)} chart(s) generated"
+                
+                say(response_text)
+                
+                # Upload charts if any were generated
+                if charts:
+                    from capstone_slackbot.mcp_server.tools.slack import SlackTool
+                    slack_tool = SlackTool()
+                    channel_id = event.get("channel")
+                    for chart_path in charts:
+                        if os.path.exists(chart_path):
+                            slack_tool.upload_file(
+                                chart_path,
+                                channel=channel_id,
+                                initial_comment="📊 Chart generated from query"
+                            )
             else:
                 say(f"❌ Query failed: `{query}`\nError: {result.get('error', 'Unknown error')}")
     

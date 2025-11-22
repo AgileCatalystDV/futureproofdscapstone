@@ -82,10 +82,13 @@ class PandaAIAgent:
         
         # Step 3: Post to Slack if requested
         if post_to_slack:
+            # Include charts if any were generated
+            charts = query_result.get("charts")
             slack_result = self.slack_tool.post_result(
                 natural_language_query,
                 query_result["result"],
-                channel=slack_channel
+                channel=slack_channel,
+                charts=charts
             )
             return {
                 "success": True,

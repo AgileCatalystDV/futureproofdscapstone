@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 import pandas as pd
 from datetime import datetime, timedelta
+import glob
 try:
     from pandasai import SmartDataframe, Agent
     import pandasai as pai
@@ -210,6 +211,9 @@ class DatabaseQueryTool:
     
     async def query_with_pandasai_async(self, natural_language_query: str, api_key: Optional[str] = None, database_name: Optional[str] = None) -> Dict[str, Any]:
         """Query database using PandaAI agent (async version for MCP)"""
+        # Track existing charts before query execution
+        existing_charts = self._get_existing_charts()
+        
         try:
             # If using MCP, get data via MCP DatabaseToolbox
             if self.use_mcp and self.mcp_tool:
@@ -313,10 +317,14 @@ class DatabaseQueryTool:
                 # Use single SmartDataframe
                 result = smart_dataframes_list[0].chat(natural_language_query)
             
+            # Check for newly created charts
+            new_charts = self._get_new_charts(existing_charts)
+            
             return {
                 "success": True,
                 "result": result,
-                "query": natural_language_query
+                "query": natural_language_query,
+                "charts": new_charts if new_charts else None
             }
             
         except Exception as e:
@@ -356,6 +364,9 @@ class DatabaseQueryTool:
             )
         
         # Sync path for mock/direct connection
+        # Track existing charts before query execution
+        existing_charts = self._get_existing_charts()
+        
         try:
             # Get all tables as DataFrames (using cache if available)
             all_dataframes = self._load_dataframes()
@@ -437,10 +448,14 @@ class DatabaseQueryTool:
                 # Use single SmartDataframe
                 result = smart_dataframes_list[0].chat(natural_language_query)
             
+            # Check for newly created charts
+            new_charts = self._get_new_charts(existing_charts)
+            
             return {
                 "success": True,
                 "result": result,
-                "query": natural_language_query
+                "query": natural_language_query,
+                "charts": new_charts if new_charts else None
             }
             
         except Exception as e:
