@@ -40,6 +40,7 @@ SLACK_CHANNEL=#general
 OPENAI_API_KEY=sk-je-echte-key
 
 # Postgres (wanneer klaar)
+POSTGRESS_NAME=capstone_postgres  # Connection name voor MCP DatabaseToolbox
 POSTGRES_HOST=je-host.com
 POSTGRES_DB=je_database
 POSTGRES_USER=je_username
@@ -188,6 +189,7 @@ SLACK_CHANNEL=#data-queries
 OPENAI_API_KEY=sk-production-key
 
 # Postgres
+POSTGRESS_NAME=capstone_postgres  # Connection name for MCP DatabaseToolbox
 POSTGRES_HOST=prod-db.example.com
 POSTGRES_PORT=5432
 POSTGRES_DB=production_db

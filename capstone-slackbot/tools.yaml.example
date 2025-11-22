@@ -2,7 +2,7 @@
 # Copy this to tools.yaml and configure your database connections
 
 databases:
-  - name: capstone_postgres
+  - name: ${POSTGRESS_NAME:-capstone_postgres}
     type: postgresql
     connection:
       host: ${POSTGRES_HOST}
@@ -29,9 +29,9 @@ databases:
 
 # Alternative: Use connection string
 # databases:
-#   - name: capstone_postgres
+#   - name: ${POSTGRESS_NAME:-capstone_postgres}
 #     type: postgresql
-#     connection_string: postgresql://user:password@host:port/database
+#     connection_string: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT:-5432}/${POSTGRES_DB}
 
 # For development with mock data, you can skip this file
 # and use the MockPostgresConnection instead

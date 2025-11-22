@@ -68,7 +68,7 @@ Edit `tools.yaml` with your database credentials:
 
 ```yaml
 databases:
-  - name: capstone_postgres
+  - name: ${POSTGRESS_NAME:-capstone_postgres}
     type: postgresql
     connection:
       host: ${POSTGRES_HOST}
@@ -91,6 +91,7 @@ databases:
 ### 2. Set Environment Variables
 
 ```bash
+export POSTGRESS_NAME=capstone_postgres  # Connection name for MCP
 export POSTGRES_HOST=your-host.com
 export POSTGRES_PORT=5432
 export POSTGRES_DB=your_database
@@ -115,14 +116,17 @@ toolbox --tools-file tools.yaml
 
 ```python
 from mcp_server.tools.db_query import DatabaseQueryTool
+import os
 
 # Initialize with MCP
 db_tool = DatabaseQueryTool(use_mock=False, use_mcp=True)
 
 # Query via PandaAI (MCP handles database connection)
+# Uses POSTGRESS_NAME env var or defaults to "capstone_postgres"
+db_name = os.getenv("POSTGRESS_NAME", "capstone_postgres")
 result = db_tool.query_with_pandasai(
     "How many users are there?",
-    database_name="capstone_postgres"
+    database_name=db_name
 )
 ```
 
@@ -136,11 +140,12 @@ async def query():
     mcp_db = MCPDatabaseQueryTool()
     
     # Execute SQL directly
-    df = await mcp_db.query("SELECT * FROM users LIMIT 10", database_name="capstone_postgres")
+    db_name = os.getenv("POSTGRESS_NAME", "capstone_postgres")
+    df = await mcp_db.query("SELECT * FROM users LIMIT 10", database_name=db_name)
     print(df)
     
     # Get schema
-    schema = await mcp_db.get_table_schema("users", database_name="capstone_postgres")
+    schema = await mcp_db.get_table_schema("users", database_name=db_name)
     print(schema)
     
     await mcp_db.close()

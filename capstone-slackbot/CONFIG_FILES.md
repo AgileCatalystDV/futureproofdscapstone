@@ -25,6 +25,7 @@ SLACK_CHANNEL=#general
 OPENAI_API_KEY=sk-your-openai-api-key-here
 
 # Postgres Database (when ready to connect)
+POSTGRESS_NAME=capstone_postgres  # Connection name for MCP DatabaseToolbox
 POSTGRES_HOST=your-postgres-host.com
 POSTGRES_PORT=5432
 POSTGRES_DB=your_database_name
@@ -73,6 +74,7 @@ cat > .env << 'EOF'
 SLACK_BOT_TOKEN=xoxb-your-token
 SLACK_APP_TOKEN=xapp-your-token
 OPENAI_API_KEY=sk-your-key
+POSTGRESS_NAME=capstone_postgres
 POSTGRES_HOST=your-host
 POSTGRES_DB=your_db
 POSTGRES_USER=your_user
