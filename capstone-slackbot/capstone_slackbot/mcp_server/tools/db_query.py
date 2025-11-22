@@ -140,6 +140,22 @@ class DatabaseQueryTool:
         age = (datetime.now() - self._cache_timestamp).total_seconds()
         return age < self._cache_ttl
     
+    def _get_existing_charts(self) -> set:
+        """Get list of existing chart files before query execution"""
+        charts_dir = Path(__file__).parent.parent.parent.parent / "exports" / "charts"
+        if not charts_dir.exists():
+            return set()
+        return set(glob.glob(str(charts_dir / "*.png")))
+    
+    def _get_new_charts(self, existing_charts: set) -> List[str]:
+        """Get list of newly created chart files after query execution"""
+        charts_dir = Path(__file__).parent.parent.parent.parent / "exports" / "charts"
+        if not charts_dir.exists():
+            return []
+        current_charts = set(glob.glob(str(charts_dir / "*.png")))
+        new_charts = current_charts - existing_charts
+        return sorted(list(new_charts))
+    
     def _load_dataframes(self, force_reload: bool = False) -> Dict[str, pd.DataFrame]:
         """Load dataframes from database or cache"""
         # Check cache first
