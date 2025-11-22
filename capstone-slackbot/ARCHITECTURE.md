@@ -1,5 +1,114 @@
 # Architecture Diagram
 
+## Design outline
+
+```mermaid
+flowchart LR
+    U(("1. User Interface<br/>(Slack / Frontend)")) -->|Question| V(("2. Validation & Guardrails"))
+    V -->|Safe| Q(("3. Query Orchestrator"))
+    V -->|Unsafe (rejected)| R(("6. Response Handling<br/>(Formatting & Delivery)"))
+    Q -->|Check cache / load Data| D(("4. Data Access & Cache<br/>(DB + Query Tool + DataFrame Cache)"))
+    D -->|Dataframes| Q
+    Q -->|Dataframes + Question| A(("5. Analytics Agent<br/>(PandasAI + LLM)"))
+    A -->|Pandas-result| R
+    R -->|Formatted Answer<br/>+ status/feedback| U
+```
+
+## High Level Design
+
+```mermaid
+graph TB
+    subgraph "External Systems"
+        Slack[Slack Workspace]
+        OpenAI[OpenAI API]
+        Postgres[(PostgreSQL Database)]
+    end
+    
+    subgraph "Capstone Slack Bot System"
+        SlackBot[Slack Bot Subsystem]
+        Agent[Agent Subsystem]
+        Query[Query Subsystem]
+        Security[Security Subsystem]
+        Cache[Cache Subsystem]
+    end
+    
+    Slack -->|User Queries| SlackBot
+    SlackBot -->|Process| Agent
+    Agent -->|Validate| Security
+    Agent -->|Execute| Query
+    Query -->|Cache| Cache
+    Query -->|LLM Request| OpenAI
+    Query -->|Data Request| Postgres
+    Query -->|Results| Agent
+    Agent -->|Response| SlackBot
+    SlackBot -->|Display| Slack
+    
+    style Slack fill:#e1f5ff
+    style OpenAI fill:#e1ffe1
+    style Postgres fill:#e1e1ff
+    style SlackBot fill:#fff4e1
+    style Agent fill:#ffe1f5
+    style Query fill:#f5e1ff
+    style Security fill:#ffe1e1
+    style Cache fill:#e1ffe1
+```
+
+## System & Subsystem Architecture
+
+```mermaid
+graph TB
+    subgraph "Slack Bot System"
+        SlackHandler[Slack Handler]
+        MockSlack[Mock Slack]
+    end
+    
+    subgraph "Agent System"
+        PandaAIAgent[PandaAI Agent]
+    end
+    
+    subgraph "Query System"
+        DatabaseQueryTool[Database Query Tool]
+        DataFrameCache[DataFrame Cache]
+    end
+    
+    subgraph "Security System"
+        GuardrailsValidator[Guardrails Validator]
+    end
+    
+    subgraph "MCP Server System"
+        MCPServer[MCP Server]
+        MCPDatabaseTool[MCP Database Tool]
+    end
+    
+    subgraph "External Services"
+        OpenAIAPI[OpenAI API]
+        PostgresDB[(PostgreSQL)]
+        SlackWS[Slack Workspace]
+    end
+    
+    SlackHandler --> PandaAIAgent
+    MockSlack --> PandaAIAgent
+    PandaAIAgent --> GuardrailsValidator
+    PandaAIAgent --> DatabaseQueryTool
+    DatabaseQueryTool --> DataFrameCache
+    DatabaseQueryTool --> MCPDatabaseTool
+    DatabaseQueryTool --> PostgresDB
+    DatabaseQueryTool --> OpenAIAPI
+    MCPServer --> MCPDatabaseTool
+    MCPDatabaseTool --> PostgresDB
+    PandaAIAgent --> SlackHandler
+    
+    style SlackHandler fill:#fff4e1
+    style PandaAIAgent fill:#ffe1f5
+    style DatabaseQueryTool fill:#f5e1ff
+    style GuardrailsValidator fill:#ffe1e1
+    style DataFrameCache fill:#e1ffe1
+    style MCPServer fill:#e1e1ff
+    style OpenAIAPI fill:#e1ffe1
+    style PostgresDB fill:#e1e1ff
+    style SlackWS fill:#e1f5ff
+```
+
 ## System Architecture
 
 ```mermaid
