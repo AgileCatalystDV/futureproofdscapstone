@@ -7,6 +7,12 @@ import yaml
 import pandas as pd
 from datetime import datetime, timedelta
 import glob
+
+# Configure Matplotlib to use non-GUI backend (required for server environments and macOS)
+# This must be done BEFORE importing pandasai, as pandasai uses matplotlib for charts
+import matplotlib
+matplotlib.use('Agg')  # Use Anti-Grain Geometry backend (non-interactive, file-based)
+
 try:
     from pandasai import SmartDataframe, Agent
     import pandasai as pai

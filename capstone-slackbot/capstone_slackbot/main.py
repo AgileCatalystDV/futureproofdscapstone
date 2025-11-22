@@ -5,6 +5,11 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Configure Matplotlib to use non-GUI backend (required for server environments and macOS)
+# This must be done BEFORE importing any modules that use matplotlib/pandasai
+import matplotlib
+matplotlib.use('Agg')  # Use Anti-Grain Geometry backend (non-interactive, file-based)
+
 # Load .env file from project root
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)

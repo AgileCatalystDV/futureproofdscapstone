@@ -47,6 +47,13 @@ class SlackBotHandler:
             
             # Initialize Slack app
             self.app = App(token=self.bot_token)
+            
+            # Add event logging for debugging (optional - can be verbose)
+            # Uncomment if you need to debug all incoming events
+            # @self.app.event("message")
+            # def handle_message_events(event, say):
+            #     """Log all message events for debugging"""
+            #     print(f"📨 Message event: {event.get('text', 'N/A')[:50]}...")
         
         # Initialize PandaAI agent
         # Check if PostgreSQL credentials are available
@@ -74,6 +81,12 @@ class SlackBotHandler:
         @self.app.command("/query")
         def handle_query_command(ack, command, respond):
             """Handle /query slash command"""
+            print(f"\n{'='*60}")
+            print(f"🔔 Received /query command")
+            print(f"📝 Command text: {command.get('text', 'N/A')}")
+            print(f"👤 User: {command.get('user_id', 'N/A')}")
+            print(f"� channel: {command.get('channel_id', 'N/A')}")
+            
             ack()
             query = command.get("text", "").strip()
             
@@ -81,23 +94,30 @@ class SlackBotHandler:
                 respond("Please provide a query. Usage: /query <your question>")
                 return
             
+            print(f"🔄 Processing query: '{query}'...")
+            
             # Process query
             result = self.agent.process_query(
                 query,
                 post_to_slack=False  # We'll respond directly
             )
             
+            print(f"✅ Query processed: success={result.get('success', False)}")
+            
             if result["success"]:
                 query_result = result["query_result"]
-                response_text = f"✅ Query: `{query}`\n\nResult:\n{query_result['result']}"
+                result_type = type(query_result.get('result')).__name__
+                print(f"📊 Result type: {result_type}")
                 
                 # Check if charts were generated
                 charts = query_result.get("charts")
                 if charts:
-                    response_text += f"\n\n📊 {len(charts)} chart(s) generated"
+                    print(f"📈 Charts detected: {len(charts)} file(s)")
+                    for chart in charts:
+                        print(f"   - {chart}")
                 
-                # Check if charts were generated
-                charts = query_result.get("charts")
+                response_text = f"✅ Query: `{query}`\n\nResult:\n{query_result['result']}"
+                
                 if charts:
                     response_text += f"\n\n📊 {len(charts)} chart(s) generated"
                 
@@ -105,29 +125,47 @@ class SlackBotHandler:
                 
                 # Upload charts if any were generated
                 if charts:
+                    print("📤 Uploading charts to Slack...")
                     from capstone_slackbot.mcp_server.tools.slack import SlackTool
                     slack_tool = SlackTool()
                     for chart_path in charts:
                         if os.path.exists(chart_path):
-                            slack_tool.upload_file(
+                            upload_result = slack_tool.upload_file(
                                 chart_path,
                                 channel=command.get("channel_id"),
                                 initial_comment="📊 Chart generated from query"
                             )
+                            if upload_result.get("success"):
+                                print(f"   ✅ Uploaded: {os.path.basename(chart_path)}")
+                            else:
+                                print(f"   ❌ Upload failed: {upload_result.get('error', 'Unknown')}")
+                print(f"{'='*60}\n")
             else:
-                response_text = f"❌ Query failed: `{query}`\nError: {result.get('error', 'Unknown error')}"
-                respond(response_text)
+                error_msg = result.get('error', 'Unknown error')
+                print(f"❌ Query failed: {error_msg}")
+                respond(f"❌ Query failed: `{query}`\nError: {error_msg}")
+                print(f"{'='*60}\n")
         
         @self.app.event("app_mention")
         def handle_mention(event, say):
             """Handle @bot mentions"""
+            print(f"\n{'='*60}")
+            print(f"🔔 Received mention event: {event.get('type', 'unknown')}")
+            print(f"📝 Event text: {event.get('text', 'N/A')}")
+            print(f"👤 User: {event.get('user', 'N/A')}")
+            print(f"� channel: {event.get('channel', 'N/A')}")
+            
             query = event.get("text", "").replace("<@", "").replace(">", "").strip()
             # Remove bot user ID from query
             query = " ".join(query.split()[1:])  # Remove first word (bot mention)
             
+            print(f"🔍 Extracted query: '{query}'")
+            
             if not query:
                 say("Hi! Ask me a question about the database. Example: 'What payments did user 98765 make?'")
                 return
+            
+            print(f"🔄 Processing mention query: '{query}'...")
             
             # Process query
             result = self.agent.process_query(
@@ -135,12 +173,21 @@ class SlackBotHandler:
                 post_to_slack=False
             )
             
+            print(f"✅ Mention query processed: success={result.get('success', False)}")
+            
             if result["success"]:
                 query_result = result["query_result"]
+                result_type = type(query_result.get('result')).__name__
+                print(f"📊 Result type: {result_type}")
+                
+                charts = query_result.get("charts")
+                if charts:
+                    print(f"📈 Charts detected: {len(charts)} file(s)")
+                    for chart in charts:
+                        print(f"   - {chart}")
+                
                 response_text = f"✅ Query: `{query}`\n\nResult:\n{query_result['result']}"
                 
-                # Check if charts were generated
-                charts = query_result.get("charts")
                 if charts:
                     response_text += f"\n\n📊 {len(charts)} chart(s) generated"
                 
@@ -148,18 +195,27 @@ class SlackBotHandler:
                 
                 # Upload charts if any were generated
                 if charts:
+                    print("📤 Uploading charts to Slack...")
                     from capstone_slackbot.mcp_server.tools.slack import SlackTool
                     slack_tool = SlackTool()
                     channel_id = event.get("channel")
                     for chart_path in charts:
                         if os.path.exists(chart_path):
-                            slack_tool.upload_file(
+                            upload_result = slack_tool.upload_file(
                                 chart_path,
                                 channel=channel_id,
                                 initial_comment="📊 Chart generated from query"
                             )
+                            if upload_result.get("success"):
+                                print(f"   ✅ Uploaded: {os.path.basename(chart_path)}")
+                            else:
+                                print(f"   ❌ Upload failed: {upload_result.get('error', 'Unknown')}")
+                print(f"{'='*60}\n")
             else:
-                say(f"❌ Query failed: `{query}`\nError: {result.get('error', 'Unknown error')}")
+                error_msg = result.get('error', 'Unknown error')
+                print(f"❌ Query failed: {error_msg}")
+                say(f"❌ Query failed: `{query}`\nError: {error_msg}")
+                print(f"{'='*60}\n")
     
     def start(self):
         """Start the Slack bot"""
@@ -170,6 +226,10 @@ class SlackBotHandler:
         else:
             handler = SocketModeHandler(self.app, self.app_token)
             print("Starting Slack bot...")
+            print(f"✅ Bot token: {'SET' if self.bot_token else 'NOT SET'}")
+            print(f"✅ App token: {'SET' if self.app_token else 'NOT SET'}")
+            print("📡 Listening for events...")
+            print("💡 Try: /query <question> or @bot <question>")
             handler.start()
 
 
