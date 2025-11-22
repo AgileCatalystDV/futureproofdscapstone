@@ -100,6 +100,53 @@ class SlackTool:
                 "channel": target_channel if 'target_channel' in locals() else None
             }
     
+    def upload_file_to_dm(self, file_path: str, user_id: str, initial_comment: Optional[str] = None) -> Dict:
+        """Upload a file to a user's DM channel"""
+        try:
+            client = self._get_client()
+            
+            # Open a DM conversation with the user
+            dm_response = client.conversations_open(users=[user_id])
+            if not dm_response.get("ok"):
+                return {
+                    "success": False,
+                    "error": f"Could not open DM: {dm_response.get('error', 'Unknown')}",
+                    "file_path": file_path
+                }
+            
+            dm_channel_id = dm_response["channel"]["id"]
+            
+            # Upload file to DM
+            with open(file_path, 'rb') as file_content:
+                response = client.files_upload_v2(
+                    channel=dm_channel_id,
+                    file=file_content,
+                    filename=os.path.basename(file_path),
+                    initial_comment=initial_comment
+                )
+            
+            if response.get("ok"):
+                file_info = response.get("file", {})
+                return {
+                    "success": True,
+                    "file_id": file_info.get("id", "unknown"),
+                    "file_name": file_info.get("name", os.path.basename(file_path)),
+                    "channel": dm_channel_id,
+                    "delivery_method": "DM"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": response.get("error", "Unknown error from Slack API"),
+                    "file_path": file_path
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "file_path": file_path
+            }
+    
     def post_result(self, query: str, result: any, error: Optional[str] = None, channel: Optional[str] = None, charts: Optional[List[str]] = None) -> Dict:
         """Post query result to Slack in formatted way, optionally including charts"""
         if error:

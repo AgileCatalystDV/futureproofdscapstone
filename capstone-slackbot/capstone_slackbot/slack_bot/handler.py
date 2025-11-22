@@ -129,8 +129,25 @@ class SlackBotHandler:
                     from capstone_slackbot.mcp_server.tools.slack import SlackTool
                     slack_tool = SlackTool()
                     channel_id = command.get("channel_id")
+                    user_id = command.get("user_id")
+                    
                     if not channel_id:
-                        print("   ⚠️  No channel_id found in command, cannot upload charts")
+                        print("   ⚠️  No channel_id found in command, trying DM...")
+                        if user_id:
+                            # Try to upload via DM
+                            for chart_path in charts:
+                                if os.path.exists(chart_path):
+                                    upload_result = slack_tool.upload_file_to_dm(
+                                        chart_path,
+                                        user_id=user_id,
+                                        initial_comment="📊 Chart generated from query"
+                                    )
+                                    if upload_result.get("success"):
+                                        print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                    else:
+                                        print(f"   ❌ DM upload failed: {upload_result.get('error', 'Unknown')}")
+                        else:
+                            print("   ❌ No user_id found, cannot upload charts")
                     else:
                         for chart_path in charts:
                             if os.path.exists(chart_path):
@@ -143,8 +160,21 @@ class SlackBotHandler:
                                     print(f"   ✅ Uploaded: {os.path.basename(chart_path)}")
                                 else:
                                     error_detail = upload_result.get('error', 'Unknown')
-                                    print(f"   ❌ Upload failed: {error_detail}")
+                                    print(f"   ❌ Channel upload failed: {error_detail}")
                                     print(f"      Channel: {channel_id}, File: {chart_path}")
+                                    
+                                    # Fallback to DM if channel upload fails
+                                    if user_id and ("channel_not_found" in error_detail.lower() or "not_in_channel" in error_detail.lower()):
+                                        print(f"      Trying DM fallback...")
+                                        dm_result = slack_tool.upload_file_to_dm(
+                                            chart_path,
+                                            user_id=user_id,
+                                            initial_comment="📊 Chart generated from query (sent via DM because bot doesn't have channel access)"
+                                        )
+                                        if dm_result.get("success"):
+                                            print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                        else:
+                                            print(f"   ❌ DM upload also failed: {dm_result.get('error', 'Unknown')}")
                 print(f"{'='*60}\n")
             else:
                 error_msg = result.get('error', 'Unknown error')
@@ -205,8 +235,25 @@ class SlackBotHandler:
                     from capstone_slackbot.mcp_server.tools.slack import SlackTool
                     slack_tool = SlackTool()
                     channel_id = event.get("channel")
+                    user_id = event.get("user")
+                    
                     if not channel_id:
-                        print("   ⚠️  No channel found in event, cannot upload charts")
+                        print("   ⚠️  No channel found in event, trying DM...")
+                        if user_id:
+                            # Try to upload via DM
+                            for chart_path in charts:
+                                if os.path.exists(chart_path):
+                                    upload_result = slack_tool.upload_file_to_dm(
+                                        chart_path,
+                                        user_id=user_id,
+                                        initial_comment="📊 Chart generated from query"
+                                    )
+                                    if upload_result.get("success"):
+                                        print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                    else:
+                                        print(f"   ❌ DM upload failed: {upload_result.get('error', 'Unknown')}")
+                        else:
+                            print("   ❌ No user found, cannot upload charts")
                     else:
                         for chart_path in charts:
                             if os.path.exists(chart_path):
@@ -219,8 +266,21 @@ class SlackBotHandler:
                                     print(f"   ✅ Uploaded: {os.path.basename(chart_path)}")
                                 else:
                                     error_detail = upload_result.get('error', 'Unknown')
-                                    print(f"   ❌ Upload failed: {error_detail}")
+                                    print(f"   ❌ Channel upload failed: {error_detail}")
                                     print(f"      Channel: {channel_id}, File: {chart_path}")
+                                    
+                                    # Fallback to DM if channel upload fails
+                                    if user_id and ("channel_not_found" in error_detail.lower() or "not_in_channel" in error_detail.lower()):
+                                        print(f"      Trying DM fallback...")
+                                        dm_result = slack_tool.upload_file_to_dm(
+                                            chart_path,
+                                            user_id=user_id,
+                                            initial_comment="📊 Chart generated from query (sent via DM because bot doesn't have channel access)"
+                                        )
+                                        if dm_result.get("success"):
+                                            print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                        else:
+                                            print(f"   ❌ DM upload also failed: {dm_result.get('error', 'Unknown')}")
                 print(f"{'='*60}\n")
             else:
                 error_msg = result.get('error', 'Unknown error')
