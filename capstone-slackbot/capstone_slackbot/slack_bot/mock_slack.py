@@ -74,7 +74,21 @@ class MockSlackHandler:
                 if result["success"]:
                     query_result = result["query_result"]
                     print("✅ Query successful!")
-                    print(f"\nResult:\n{query_result['result']}\n")
+                    
+                    # Check if result is a chart path
+                    result_str = str(query_result['result'])
+                    if result_str.startswith('exports/charts/') or result_str.endswith('.png'):
+                        print(f"\n📊 Chart generated:\n{result_str}\n")
+                    else:
+                        print(f"\nResult:\n{result_str}\n")
+                    
+                    # Show charts info if any were detected
+                    charts = query_result.get("charts")
+                    if charts:
+                        print(f"📊 {len(charts)} chart file(s) detected:")
+                        for chart_path in charts:
+                            print(f"   - {chart_path}")
+                        print()
                 else:
                     error_msg = result.get('error', 'Unknown error')
                     print(f"❌ Query failed: {error_msg}\n")
