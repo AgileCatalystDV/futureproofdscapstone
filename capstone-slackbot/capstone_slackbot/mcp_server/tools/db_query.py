@@ -7,12 +7,13 @@ import yaml
 import pandas as pd
 from datetime import datetime, timedelta
 try:
-    from pandasai import SmartDataframe
+    from pandasai import SmartDataframe, Agent
     import pandasai as pai
     from pandasai_litellm.litellm import LiteLLM
 except ImportError:
     # Fallback if pandasai not installed
     SmartDataframe = None
+    Agent = None
     pai = None
     LiteLLM = None
 
@@ -270,29 +271,38 @@ class DatabaseQueryTool:
                         print(f"❌ {error_msg}")
                         raise ValueError(error_msg)
             
-            # Create SmartDataframe with context
-            # For now, we'll use the first dataframe (users) as primary
-            # In production, PandaAI can handle multiple dataframes
-            primary_df = all_dataframes.get('users', pd.DataFrame())
+            # Use Agent with all dataframes for better multi-table support
+            # Filter out empty dataframes
+            available_dataframes = {k: v for k, v in all_dataframes.items() if not v.empty}
             
-            if primary_df.empty:
+            if not available_dataframes:
                 return {
                     "success": False,
                     "error": "No data available",
                     "result": None
                 }
             
-            # Create SmartDataframe with schema context
-            smart_df = SmartDataframe(
-                primary_df,
-                config={
-                    "llm": self.llm,
-                    "custom_instructions": self._get_pandasai_context()
-                }
-            )
+            # Create SmartDataframes for each table
+            # Agent expects a list of SmartDataframes
+            config = {
+                "llm": self.llm,
+                "custom_instructions": self._get_pandasai_context()
+            }
             
-            # Execute query
-            result = smart_df.chat(natural_language_query)
+            # Create SmartDataframes for all available tables
+            smart_dataframes_list = []
+            for table_name, df in available_dataframes.items():
+                smart_df = SmartDataframe(df, config=config)
+                smart_dataframes_list.append(smart_df)
+            
+            # Use Agent with multiple SmartDataframes if we have more than one
+            if Agent is not None and len(smart_dataframes_list) > 1:
+                # Agent accepts a list of SmartDataframes
+                agent = Agent(smart_dataframes_list, config=config)
+                result = agent.chat(natural_language_query)
+            else:
+                # Use single SmartDataframe
+                result = smart_dataframes_list[0].chat(natural_language_query)
             
             return {
                 "success": True,
@@ -366,29 +376,38 @@ class DatabaseQueryTool:
                         print(f"❌ {error_msg}")
                         raise ValueError(error_msg)
             
-            # Create SmartDataframe with context
-            # For now, we'll use the first dataframe (users) as primary
-            # In production, PandaAI can handle multiple dataframes
-            primary_df = all_dataframes.get('users', pd.DataFrame())
+            # Use Agent with all dataframes for better multi-table support
+            # Filter out empty dataframes
+            available_dataframes = {k: v for k, v in all_dataframes.items() if not v.empty}
             
-            if primary_df.empty:
+            if not available_dataframes:
                 return {
                     "success": False,
                     "error": "No data available",
                     "result": None
                 }
             
-            # Create SmartDataframe with schema context
-            smart_df = SmartDataframe(
-                primary_df,
-                config={
-                    "llm": self.llm,
-                    "custom_instructions": self._get_pandasai_context()
-                }
-            )
+            # Create SmartDataframes for each table
+            # Agent expects a list of SmartDataframes
+            config = {
+                "llm": self.llm,
+                "custom_instructions": self._get_pandasai_context()
+            }
             
-            # Execute query
-            result = smart_df.chat(natural_language_query)
+            # Create SmartDataframes for all available tables
+            smart_dataframes_list = []
+            for table_name, df in available_dataframes.items():
+                smart_df = SmartDataframe(df, config=config)
+                smart_dataframes_list.append(smart_df)
+            
+            # Use Agent with multiple SmartDataframes if we have more than one
+            if Agent is not None and len(smart_dataframes_list) > 1:
+                # Agent accepts a list of SmartDataframes
+                agent = Agent(smart_dataframes_list, config=config)
+                result = agent.chat(natural_language_query)
+            else:
+                # Use single SmartDataframe
+                result = smart_dataframes_list[0].chat(natural_language_query)
             
             return {
                 "success": True,
