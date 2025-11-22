@@ -53,3 +53,15 @@ max_complexity:
   max_rows_returned: 10000
   max_query_length: 5000  # characters
 
+# Encoding protection (prevents encoding-based bypasses)
+encoding_protection:
+  enabled: true  # Set to false to disable encoding protection (not recommended)
+  # Detects and blocks:
+  # - URL encoding (%XX)
+  # - HTML entity encoding (&lt; &gt; etc)
+  # - Hex encoding (\xXX)
+  # - Unicode homoglyphs
+  # - Base64-encoded SQL
+  # - Control characters
+  # - Null bytes
+

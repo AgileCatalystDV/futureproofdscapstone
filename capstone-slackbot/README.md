@@ -182,7 +182,7 @@ print(result.is_safe)  # False
 
 ### Test Mock Database
 ```python
-from mcp_server.tools.db_query import MockPostgresConnection
+from mcp_server.tools.mock_database import MockPostgresConnection
 
 conn = MockPostgresConnection()
 users = conn.get_table("users")

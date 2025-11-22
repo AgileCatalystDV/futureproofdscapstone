@@ -214,7 +214,7 @@ blocked_patterns:
 
 **Add more mock data:**
 
-Edit `mcp_server/tools/db_query.py` → `MockPostgresConnection._generate_mock_data()`
+Edit `mcp_server/tools/mock_database.py` → `MockPostgresConnection._generate_mock_data()`
 
 ### Slack Configuration
 

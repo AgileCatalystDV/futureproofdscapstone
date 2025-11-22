@@ -8,6 +8,7 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 from agent.pandasai_agent import PandaAIAgent
+from slack_bot.mock_slack import MockSlackHandler
 
 # Load .env file from project root
 env_path = Path(__file__).parent.parent / ".env"
@@ -33,6 +34,7 @@ class SlackBotHandler:
             self.bot_token = None
             self.app_token = None
             self.app = None
+            self.mock_handler = None  # Will be initialized in start()
         else:
             # Real Slack mode - tokens required
             self.bot_token = bot_token or os.getenv("SLACK_BOT_TOKEN")
@@ -119,84 +121,13 @@ class SlackBotHandler:
     def start(self):
         """Start the Slack bot"""
         if self.use_mock_slack:
-            self._start_mock_mode()
+            # Use mock Slack handler
+            self.mock_handler = MockSlackHandler(self.agent)
+            self.mock_handler.start()
         else:
             handler = SocketModeHandler(self.app, self.app_token)
             print("Starting Slack bot...")
             handler.start()
-    
-    def _start_mock_mode(self):
-        """Start mock Slack mode with CLI interface"""
-        print("\n" + "="*60)
-        print("🤖 MOCK SLACK MODE - Interactive CLI")
-        print("="*60)
-        print("\nType your queries (or '/query <question>' format)")
-        print("Commands:")
-        print("  /query <question>  - Process a query")
-        print("  @bot <question>   - Process a query (mention format)")
-        print("  /quit or /exit    - Exit")
-        print("  /help             - Show this help")
-        print("\n" + "-"*60 + "\n")
-        
-        while True:
-            try:
-                user_input = input("You: ").strip()
-                
-                if not user_input:
-                    continue
-                
-                # Handle commands
-                if user_input.lower() in ['/quit', '/exit', 'quit', 'exit']:
-                    print("\n👋 Shutting down mock Slack bot...")
-                    break
-                
-                if user_input.lower() == '/help':
-                    print("\nCommands:")
-                    print("  /query <question>  - Process a query")
-                    print("  @bot <question>    - Process a query")
-                    print("  /quit or /exit     - Exit")
-                    print("  /help              - Show this help\n")
-                    continue
-                
-                # Extract query from different formats
-                query = user_input.strip()
-                if query.startswith('/query '):
-                    query = query[7:].strip()  # Remove '/query ' prefix
-                elif query.startswith('@bot '):
-                    query = query[5:].strip()  # Remove '@bot ' prefix
-                elif query.startswith('@') and ' ' in query:
-                    # Remove @mention (any @word)
-                    parts = query.split(' ', 1)
-                    query = parts[1] if len(parts) > 1 else ""
-                
-                if not query:
-                    print("❌ Please provide a query. Example: 'How many users are there?'")
-                    continue
-                
-                # Process query
-                print(f"\n🔄 Processing query: '{query}'...\n")
-                result = self.agent.process_query(
-                    query,
-                    post_to_slack=False
-                )
-                
-                # Display result
-                if result["success"]:
-                    query_result = result["query_result"]
-                    print("✅ Query successful!")
-                    print(f"\nResult:\n{query_result['result']}\n")
-                else:
-                    error_msg = result.get('error', 'Unknown error')
-                    print(f"❌ Query failed: {error_msg}\n")
-                
-                print("-"*60 + "\n")
-                
-            except KeyboardInterrupt:
-                print("\n\n👋 Shutting down mock Slack bot...")
-                break
-            except Exception as e:
-                print(f"\n❌ Error: {e}\n")
-                print("-"*60 + "\n")
 
 
 def main():

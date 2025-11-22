@@ -4,12 +4,16 @@
 import sys
 from pathlib import Path
 
+# Add parent directory to path so we can import modules
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 def test_imports():
     """Test that all imports work"""
     print("Testing imports...")
     try:
         from mcp_server.tools.guardrails import GuardrailsValidator
-        from mcp_server.tools.db_query import DatabaseQueryTool, MockPostgresConnection
+        from mcp_server.tools.db_query import DatabaseQueryTool
+        from mcp_server.tools.mock_database import MockPostgresConnection
         from mcp_server.tools.slack import SlackTool
         from agent.pandasai_agent import PandaAIAgent
         print("✅ All imports successful")
@@ -52,7 +56,7 @@ def test_mock_db():
     """Test mock database connection"""
     print("\nTesting mock database...")
     try:
-        from mcp_server.tools.db_query import MockPostgresConnection
+        from mcp_server.tools.mock_database import MockPostgresConnection
         
         conn = MockPostgresConnection()
         
