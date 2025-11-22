@@ -14,9 +14,11 @@ import matplotlib
 matplotlib.use('Agg')  # Use Anti-Grain Geometry backend (non-interactive, file-based)
 
 try:
-    from pandasai import SmartDataframe, Agent
     import pandasai as pai
     from pandasai_litellm.litellm import LiteLLM
+    # Note: SmartDataframe and Agent are deprecated in v3, but kept for backwards compatibility
+    # New v3 API uses pai.DataFrame() and pai.chat() instead
+    from pandasai import SmartDataframe, Agent  # Deprecated but still works
 except ImportError:
     # Fallback if pandasai not installed
     SmartDataframe = None
@@ -324,20 +326,34 @@ class DatabaseQueryTool:
                 "enable_sql_query": False  # Disable SQL to avoid DuckDB issues
             }
             
-            # Create SmartDataframes for all available tables
-            smart_dataframes_list = []
-            for table_name, df in available_dataframes.items():
-                smart_df = SmartDataframe(df, config=config)
-                smart_dataframes_list.append(smart_df)
-            
-            # Use Agent with multiple SmartDataframes if we have more than one
-            if Agent is not None and len(smart_dataframes_list) > 1:
-                # Agent accepts a list of SmartDataframes
-                agent = Agent(smart_dataframes_list, config=config)
-                result = agent.chat(natural_language_query)
+            # Use PandasAI v3 API: pai.DataFrame() and pai.chat() for multiple dataframes
+            # This is the recommended approach in v3 (SmartDataframe/Agent are deprecated)
+            if pai is not None:
+                # Convert all dataframes to PandasAI DataFrames
+                pai_dataframes = []
+                for table_name, df in available_dataframes.items():
+                    # Use new v3 API: pai.DataFrame() instead of SmartDataframe()
+                    pai_df = pai.DataFrame(df, config=config)
+                    pai_dataframes.append(pai_df)
+                
+                # Use pai.chat() for querying multiple dataframes (v3 API)
+                if len(pai_dataframes) > 1:
+                    result = pai.chat(natural_language_query, *pai_dataframes, config=config)
+                else:
+                    # Single dataframe: use .chat() method directly
+                    result = pai_dataframes[0].chat(natural_language_query)
             else:
-                # Use single SmartDataframe
-                result = smart_dataframes_list[0].chat(natural_language_query)
+                # Fallback to deprecated API if new API not available
+                smart_dataframes_list = []
+                for table_name, df in available_dataframes.items():
+                    smart_df = SmartDataframe(df, config=config)
+                    smart_dataframes_list.append(smart_df)
+                
+                if Agent is not None and len(smart_dataframes_list) > 1:
+                    agent = Agent(smart_dataframes_list, config=config)
+                    result = agent.chat(natural_language_query)
+                else:
+                    result = smart_dataframes_list[0].chat(natural_language_query)
             
             # Check for newly created charts
             new_charts = self._get_new_charts(existing_charts)
@@ -455,20 +471,34 @@ class DatabaseQueryTool:
                 "enable_sql_query": False  # Disable SQL to avoid DuckDB issues
             }
             
-            # Create SmartDataframes for all available tables
-            smart_dataframes_list = []
-            for table_name, df in available_dataframes.items():
-                smart_df = SmartDataframe(df, config=config)
-                smart_dataframes_list.append(smart_df)
-            
-            # Use Agent with multiple SmartDataframes if we have more than one
-            if Agent is not None and len(smart_dataframes_list) > 1:
-                # Agent accepts a list of SmartDataframes
-                agent = Agent(smart_dataframes_list, config=config)
-                result = agent.chat(natural_language_query)
+            # Use PandasAI v3 API: pai.DataFrame() and pai.chat() for multiple dataframes
+            # This is the recommended approach in v3 (SmartDataframe/Agent are deprecated)
+            if pai is not None:
+                # Convert all dataframes to PandasAI DataFrames
+                pai_dataframes = []
+                for table_name, df in available_dataframes.items():
+                    # Use new v3 API: pai.DataFrame() instead of SmartDataframe()
+                    pai_df = pai.DataFrame(df, config=config)
+                    pai_dataframes.append(pai_df)
+                
+                # Use pai.chat() for querying multiple dataframes (v3 API)
+                if len(pai_dataframes) > 1:
+                    result = pai.chat(natural_language_query, *pai_dataframes, config=config)
+                else:
+                    # Single dataframe: use .chat() method directly
+                    result = pai_dataframes[0].chat(natural_language_query)
             else:
-                # Use single SmartDataframe
-                result = smart_dataframes_list[0].chat(natural_language_query)
+                # Fallback to deprecated API if new API not available
+                smart_dataframes_list = []
+                for table_name, df in available_dataframes.items():
+                    smart_df = SmartDataframe(df, config=config)
+                    smart_dataframes_list.append(smart_df)
+                
+                if Agent is not None and len(smart_dataframes_list) > 1:
+                    agent = Agent(smart_dataframes_list, config=config)
+                    result = agent.chat(natural_language_query)
+                else:
+                    result = smart_dataframes_list[0].chat(natural_language_query)
             
             # Check for newly created charts
             new_charts = self._get_new_charts(existing_charts)
