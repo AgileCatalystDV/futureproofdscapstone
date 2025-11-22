@@ -1,0 +1,148 @@
+semantic_model:
+  description: Capstone Project Database Schema
+  tables:
+    users:
+      description: User account information
+      columns:
+        user_id:
+          type: integer
+          nullable: false
+          description: Reference to user account
+          example: 98765
+        signup_date:
+          type: timestamp without time zone
+          nullable: false
+          description: User account creation date
+          example: '2024-01-01 08:00:00'
+        country:
+          type: character varying
+          nullable: false
+          description: ISO 3166-1 alpha-2 country code
+          example: US
+        device_type:
+          type: character varying
+          nullable: false
+          description: Device platform (mobile/desktop/tablet)
+          example: mobile
+      allowed_columns:
+      - user_id
+      - signup_date
+      - country
+      - device_type
+      excluded_columns: []
+      sensitivity: public
+    subscriptions:
+      description: User subscription information
+      columns:
+        subscription_id:
+          type: integer
+          nullable: false
+          description: Reference to subscription record
+          example: 54321
+        user_id:
+          type: integer
+          nullable: false
+          description: Reference to user account
+          example: 98765
+        plan:
+          type: character varying
+          nullable: false
+          description: Subscription plan type
+          example: premium
+        start_date:
+          type: timestamp without time zone
+          nullable: false
+          description: Period or subscription start date
+          example: '2024-01-01 00:00:00'
+        end_date:
+          type: timestamp without time zone
+          nullable: true
+          description: Period or subscription end date (nullable)
+          example: '2024-12-31 23:59:59'
+        status:
+          type: character varying
+          nullable: false
+          description: Current status of record (active/inactive/pending)
+          example: active
+      allowed_columns:
+      - subscription_id
+      - user_id
+      - plan
+      - start_date
+      - end_date
+      - status
+      excluded_columns: []
+      sensitivity: sensitive
+    payments:
+      description: Payment transaction records
+      columns:
+        payment_id:
+          type: integer
+          nullable: false
+          description: Unique payment transaction identifier
+          example: 11111
+        subscription_id:
+          type: integer
+          nullable: false
+          description: Reference to subscription record
+          example: 54321
+        payment_date:
+          type: timestamp without time zone
+          nullable: false
+          description: Date when payment was processed
+          example: '2024-01-10 16:20:00'
+        amount_usd:
+          type: numeric
+          nullable: false
+          description: Amount in USD currency
+          example: 49.99
+        method:
+          type: character varying
+          nullable: false
+          description: Payment method type (card/bank/wallet)
+          example: card
+      allowed_columns:
+      - payment_id
+      - subscription_id
+      - payment_date
+      - amount_usd
+      - method
+      excluded_columns: []
+      sensitivity: public
+    sessions:
+      description: User session tracking
+      columns:
+        session_id:
+          type: integer
+          nullable: false
+          description: Unique session identifier
+          example: 77777
+        user_id:
+          type: integer
+          nullable: false
+          description: Reference to user account
+          example: 98765
+        session_date:
+          type: timestamp without time zone
+          nullable: false
+          description: Date of user session activity
+          example: '2024-01-15 09:15:00'
+        duration_minutes:
+          type: integer
+          nullable: false
+          description: Session duration in minutes
+          example: 32
+        activity_type:
+          type: character varying
+          nullable: false
+          description: Type of user activity or session action
+          example: login
+      allowed_columns:
+      - session_id
+      - user_id
+      - session_date
+      - duration_minutes
+      - activity_type
+      excluded_columns: []
+      sensitivity: public
+

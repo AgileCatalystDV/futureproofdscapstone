@@ -49,7 +49,23 @@ class PandaAIAgent:
             api_key=self.api_key
         )
         
-        if not query_result["success"]:
+        # Handle case where query_result might be None or invalid
+        if not query_result or not isinstance(query_result, dict):
+            error_msg = f"Query execution failed: Invalid response from database tool"
+            if post_to_slack:
+                self.slack_tool.post_result(
+                    natural_language_query,
+                    None,
+                    error=error_msg,
+                    channel=slack_channel
+                )
+            return {
+                "success": False,
+                "error": error_msg,
+                "query_result": query_result
+            }
+        
+        if not query_result.get("success", False):
             error_msg = f"Query execution failed: {query_result.get('error', 'Unknown error')}"
             if post_to_slack:
                 self.slack_tool.post_result(

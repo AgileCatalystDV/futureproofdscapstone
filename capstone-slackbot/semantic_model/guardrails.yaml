@@ -43,7 +43,7 @@ blocked_patterns:
   - "(?i)(DROP|DELETE|TRUNCATE|ALTER|CREATE|INSERT|UPDATE)"
   - "(?i)(EXEC|EXECUTE|EXECUTE IMMEDIATE)"
   - "(?i)(UNION.*SELECT|SELECT.*UNION)"
-  - "(?i)(--|/\*|\*/)"  # SQL comments
+  - "(?i)(--|/\\*|\\*/)"  # SQL comments (escape backslashes)
   - "(?i)(;.*;)"  # Multiple statements
 
 # Complexity limits

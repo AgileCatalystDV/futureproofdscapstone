@@ -17,24 +17,54 @@ load_dotenv(dotenv_path=env_path)
 class SlackBotHandler:
     """Handler for Slack bot interactions"""
     
-    def __init__(self, bot_token: Optional[str] = None, app_token: Optional[str] = None):
-        """Initialize Slack bot handler"""
-        self.bot_token = bot_token or os.getenv("SLACK_BOT_TOKEN")
-        self.app_token = app_token or os.getenv("SLACK_APP_TOKEN")
+    def __init__(self, bot_token: Optional[str] = None, app_token: Optional[str] = None, use_mock_slack: bool = False):
+        """Initialize Slack bot handler
         
-        if not self.bot_token:
-            raise ValueError("SLACK_BOT_TOKEN environment variable required")
-        if not self.app_token:
-            raise ValueError("SLACK_APP_TOKEN environment variable required")
+        Args:
+            bot_token: Slack bot token (optional, reads from env if not provided)
+            app_token: Slack app token (optional, reads from env if not provided)
+            use_mock_slack: If True, run in mock mode without real Slack connection
+        """
+        self.use_mock_slack = use_mock_slack
         
-        # Initialize Slack app
-        self.app = App(token=self.bot_token)
+        if use_mock_slack:
+            # Mock mode - no Slack tokens needed
+            print("🤖 Running in MOCK SLACK mode (no real Slack connection)")
+            self.bot_token = None
+            self.app_token = None
+            self.app = None
+        else:
+            # Real Slack mode - tokens required
+            self.bot_token = bot_token or os.getenv("SLACK_BOT_TOKEN")
+            self.app_token = app_token or os.getenv("SLACK_APP_TOKEN")
+            
+            if not self.bot_token:
+                raise ValueError("SLACK_BOT_TOKEN environment variable required (or use use_mock_slack=True)")
+            if not self.app_token:
+                raise ValueError("SLACK_APP_TOKEN environment variable required (or use use_mock_slack=True)")
+            
+            # Initialize Slack app
+            self.app = App(token=self.bot_token)
         
         # Initialize PandaAI agent
-        self.agent = PandaAIAgent(use_mock_db=True)  # Will switch to real DB later
+        # Check if PostgreSQL credentials are available
+        # Support both POSTGRES_* and POSTGRESS_* (with double 's') variants
+        postgres_host = os.getenv("POSTGRES_HOST") or os.getenv("POSTGRESS_HOST")
+        postgres_db = os.getenv("POSTGRES_DB") or os.getenv("POSTGRES_NAME") or os.getenv("POSTGRESS_NAME") or os.getenv("POSTGRESS_DB")
+        postgres_user = os.getenv("POSTGRES_USER") or os.getenv("POSTGRESS_USER")
+        postgres_pass = os.getenv("POSTGRES_PASSWORD") or os.getenv("POSTGRES_PASS") or os.getenv("POSTGRESS_PASSWORD") or os.getenv("POSTGRESS_PASS")
         
-        # Register handlers
-        self._register_handlers()
+        use_mock_db = not all([postgres_host, postgres_db, postgres_user, postgres_pass])
+        if use_mock_db:
+            print("⚠️  PostgreSQL credentials not found, using mock database")
+        else:
+            print("✓ PostgreSQL credentials found, connecting to real database")
+        
+        self.agent = PandaAIAgent(use_mock_db=use_mock_db)
+        
+        # Register handlers (only if not mock mode)
+        if not use_mock_slack:
+            self._register_handlers()
     
     def _register_handlers(self):
         """Register Slack event handlers"""
@@ -88,15 +118,100 @@ class SlackBotHandler:
     
     def start(self):
         """Start the Slack bot"""
-        handler = SocketModeHandler(self.app, self.app_token)
-        print("Starting Slack bot...")
-        handler.start()
+        if self.use_mock_slack:
+            self._start_mock_mode()
+        else:
+            handler = SocketModeHandler(self.app, self.app_token)
+            print("Starting Slack bot...")
+            handler.start()
+    
+    def _start_mock_mode(self):
+        """Start mock Slack mode with CLI interface"""
+        print("\n" + "="*60)
+        print("🤖 MOCK SLACK MODE - Interactive CLI")
+        print("="*60)
+        print("\nType your queries (or '/query <question>' format)")
+        print("Commands:")
+        print("  /query <question>  - Process a query")
+        print("  @bot <question>   - Process a query (mention format)")
+        print("  /quit or /exit    - Exit")
+        print("  /help             - Show this help")
+        print("\n" + "-"*60 + "\n")
+        
+        while True:
+            try:
+                user_input = input("You: ").strip()
+                
+                if not user_input:
+                    continue
+                
+                # Handle commands
+                if user_input.lower() in ['/quit', '/exit', 'quit', 'exit']:
+                    print("\n👋 Shutting down mock Slack bot...")
+                    break
+                
+                if user_input.lower() == '/help':
+                    print("\nCommands:")
+                    print("  /query <question>  - Process a query")
+                    print("  @bot <question>    - Process a query")
+                    print("  /quit or /exit     - Exit")
+                    print("  /help              - Show this help\n")
+                    continue
+                
+                # Extract query from different formats
+                query = user_input.strip()
+                if query.startswith('/query '):
+                    query = query[7:].strip()  # Remove '/query ' prefix
+                elif query.startswith('@bot '):
+                    query = query[5:].strip()  # Remove '@bot ' prefix
+                elif query.startswith('@') and ' ' in query:
+                    # Remove @mention (any @word)
+                    parts = query.split(' ', 1)
+                    query = parts[1] if len(parts) > 1 else ""
+                
+                if not query:
+                    print("❌ Please provide a query. Example: 'How many users are there?'")
+                    continue
+                
+                # Process query
+                print(f"\n🔄 Processing query: '{query}'...\n")
+                result = self.agent.process_query(
+                    query,
+                    post_to_slack=False
+                )
+                
+                # Display result
+                if result["success"]:
+                    query_result = result["query_result"]
+                    print("✅ Query successful!")
+                    print(f"\nResult:\n{query_result['result']}\n")
+                else:
+                    error_msg = result.get('error', 'Unknown error')
+                    print(f"❌ Query failed: {error_msg}\n")
+                
+                print("-"*60 + "\n")
+                
+            except KeyboardInterrupt:
+                print("\n\n👋 Shutting down mock Slack bot...")
+                break
+            except Exception as e:
+                print(f"\n❌ Error: {e}\n")
+                print("-"*60 + "\n")
 
 
 def main():
     """Main entry point for Slack bot"""
+    import sys
+    
+    # Check for mock mode flag
+    use_mock_slack = os.getenv("USE_MOCK_SLACK", "false").lower() == "true"
+    
+    # Also check command line args
+    if "--mock" in sys.argv or "-m" in sys.argv:
+        use_mock_slack = True
+    
     try:
-        bot = SlackBotHandler()
+        bot = SlackBotHandler(use_mock_slack=use_mock_slack)
         bot.start()
     except KeyboardInterrupt:
         print("\nShutting down Slack bot...")

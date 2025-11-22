@@ -95,16 +95,25 @@ capstone-slackbot/
    python test_setup.py
    ```
 
-5. **Run locally (mock database):**
+5. **Run locally:**
+
+   **With mock Slack (no Slack tokens needed):**
    ```bash
-   python -m slack_bot.handler
+   poetry run python -m slack_bot.handler --mock
+   # Or set environment variable:
+   USE_MOCK_SLACK=true poetry run python -m slack_bot.handler
+   ```
+   
+   **With real Slack (requires Slack tokens in .env):**
+   ```bash
+   poetry run python -m slack_bot.handler
    ```
 
 ### Docker Setup
 
 1. **Build and run:**
    ```bash
-   docker-compose up --build
+   /
    ```
 
 2. **View logs:**
@@ -181,6 +190,8 @@ print(f"Users: {len(users)} rows")
 ```
 
 ### Test PandaAI Agent
+
+**Option 1: Direct Python script**
 ```python
 from agent.pandasai_agent import PandaAIAgent
 import os
@@ -190,6 +201,18 @@ agent = PandaAIAgent()
 result = agent.process_query("How many users are there?")
 print(result)
 ```
+
+**Option 2: Mock Slack mode (interactive CLI)**
+```bash
+# No Slack tokens needed!
+poetry run python -m slack_bot.handler --mock
+```
+
+Then type queries interactively:
+- `/query How many users are there?`
+- `@bot What payments did user 98765 make?`
+- `/help` for commands
+- `/quit` to exit
 
 ## 🔧 Configuration
 
@@ -266,7 +289,7 @@ See `semantic_model/schema.yaml` for full schema details.
 - ✅ Docker setup
 
 ### Future Enhancements
-- [ ] Real Postgres connection
+- [X] Real Postgres connection
 - [ ] Multi-turn conversation support
 - [ ] Result pagination for large datasets
 - [ ] Query caching
