@@ -12,7 +12,7 @@ Capstone Slack Bot is a natural language database query system that enables user
 4. **Slack Integration**: Seamless integration with Slack for easy access
 
 ### Key Features
-- **PandaAI Integration**: Uses LiteLLM with GPT-4o-mini for natural language processing
+- **PandaAI Integration**: Uses LiteLLM with GPT-4o-mini for natural language processing (note OPENAI_MODEL = "gpt-4.1-mini")
 - **Guardrails System**: Multi-layer security including:
   - SQL keyword blocking
   - Encoding bypass protection
@@ -29,7 +29,7 @@ Capstone Slack Bot is a natural language database query system that enables user
 
 ### Technical Stack
 - **Language**: Python 3.11
-- **LLM**: GPT-4o-mini via LiteLLM/PandasAI
+- **LLM**: gpt-4.1-mini via LiteLLM/PandasAI
 - **Database**: PostgreSQL (with mock support)
 - **Framework**: Slack Bolt (Slack SDK)
 - **Package Management**: Poetry
