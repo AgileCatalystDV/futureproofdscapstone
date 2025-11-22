@@ -85,7 +85,7 @@ class SlackBotHandler:
             print(f"🔔 Received /query command")
             print(f"📝 Command text: {command.get('text', 'N/A')}")
             print(f"👤 User: {command.get('user_id', 'N/A')}")
-            print(f"� channel: {command.get('channel_id', 'N/A')}")
+            print(f"📺 Channel: {command.get('channel_id', 'N/A')}")
             
             ack()
             query = command.get("text", "").strip()
@@ -128,17 +128,23 @@ class SlackBotHandler:
                     print("📤 Uploading charts to Slack...")
                     from capstone_slackbot.mcp_server.tools.slack import SlackTool
                     slack_tool = SlackTool()
-                    for chart_path in charts:
-                        if os.path.exists(chart_path):
-                            upload_result = slack_tool.upload_file(
-                                chart_path,
-                                channel=command.get("channel_id"),
-                                initial_comment="📊 Chart generated from query"
-                            )
-                            if upload_result.get("success"):
-                                print(f"   ✅ Uploaded: {os.path.basename(chart_path)}")
-                            else:
-                                print(f"   ❌ Upload failed: {upload_result.get('error', 'Unknown')}")
+                    channel_id = command.get("channel_id")
+                    if not channel_id:
+                        print("   ⚠️  No channel_id found in command, cannot upload charts")
+                    else:
+                        for chart_path in charts:
+                            if os.path.exists(chart_path):
+                                upload_result = slack_tool.upload_file(
+                                    chart_path,
+                                    channel=channel_id,
+                                    initial_comment="📊 Chart generated from query"
+                                )
+                                if upload_result.get("success"):
+                                    print(f"   ✅ Uploaded: {os.path.basename(chart_path)}")
+                                else:
+                                    error_detail = upload_result.get('error', 'Unknown')
+                                    print(f"   ❌ Upload failed: {error_detail}")
+                                    print(f"      Channel: {channel_id}, File: {chart_path}")
                 print(f"{'='*60}\n")
             else:
                 error_msg = result.get('error', 'Unknown error')
@@ -199,17 +205,22 @@ class SlackBotHandler:
                     from capstone_slackbot.mcp_server.tools.slack import SlackTool
                     slack_tool = SlackTool()
                     channel_id = event.get("channel")
-                    for chart_path in charts:
-                        if os.path.exists(chart_path):
-                            upload_result = slack_tool.upload_file(
-                                chart_path,
-                                channel=channel_id,
-                                initial_comment="📊 Chart generated from query"
-                            )
-                            if upload_result.get("success"):
-                                print(f"   ✅ Uploaded: {os.path.basename(chart_path)}")
-                            else:
-                                print(f"   ❌ Upload failed: {upload_result.get('error', 'Unknown')}")
+                    if not channel_id:
+                        print("   ⚠️  No channel found in event, cannot upload charts")
+                    else:
+                        for chart_path in charts:
+                            if os.path.exists(chart_path):
+                                upload_result = slack_tool.upload_file(
+                                    chart_path,
+                                    channel=channel_id,
+                                    initial_comment="📊 Chart generated from query"
+                                )
+                                if upload_result.get("success"):
+                                    print(f"   ✅ Uploaded: {os.path.basename(chart_path)}")
+                                else:
+                                    error_detail = upload_result.get('error', 'Unknown')
+                                    print(f"   ❌ Upload failed: {error_detail}")
+                                    print(f"      Channel: {channel_id}, File: {chart_path}")
                 print(f"{'='*60}\n")
             else:
                 error_msg = result.get('error', 'Unknown error')

@@ -52,31 +52,52 @@ class SlackTool:
             }
     
     def upload_file(self, file_path: str, channel: Optional[str] = None, initial_comment: Optional[str] = None, thread_ts: Optional[str] = None) -> Dict:
-        """Upload a file to Slack channel"""
+        """Upload a file to Slack channel using files_upload_v2 (recommended)"""
         try:
             client = self._get_client()
             target_channel = channel or self.default_channel
             
+            # Validate channel is provided
+            if not target_channel:
+                return {
+                    "success": False,
+                    "error": "No channel specified for file upload",
+                    "file_path": file_path
+                }
+            
+            # Use files_upload_v2() as recommended by Slack SDK
+            # It's more stable and handles large files better
             with open(file_path, 'rb') as file_content:
-                response = client.files_upload(
-                    channels=target_channel,
+                response = client.files_upload_v2(
+                    channel=target_channel,  # Note: 'channel' not 'channels' for v2
                     file=file_content,
                     filename=os.path.basename(file_path),
                     initial_comment=initial_comment,
                     thread_ts=thread_ts
                 )
             
-            return {
-                "success": True,
-                "file_id": response["file"]["id"],
-                "file_name": response["file"]["name"],
-                "channel": target_channel
-            }
+            # files_upload_v2 returns different structure
+            if response.get("ok"):
+                file_info = response.get("file", {})
+                return {
+                    "success": True,
+                    "file_id": file_info.get("id", "unknown"),
+                    "file_name": file_info.get("name", os.path.basename(file_path)),
+                    "channel": target_channel
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": response.get("error", "Unknown error from Slack API"),
+                    "file_path": file_path,
+                    "channel": target_channel
+                }
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "file_path": file_path
+                "file_path": file_path,
+                "channel": target_channel if 'target_channel' in locals() else None
             }
     
     def post_result(self, query: str, result: any, error: Optional[str] = None, channel: Optional[str] = None, charts: Optional[List[str]] = None) -> Dict:
