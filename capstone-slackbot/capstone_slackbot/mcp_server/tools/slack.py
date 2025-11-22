@@ -65,33 +65,110 @@ class SlackTool:
                     "file_path": file_path
                 }
             
+            # Check if this is a DM channel (starts with 'D')
+            is_dm_channel = target_channel.startswith('D')
+            
             # Use files_upload_v2() as recommended by Slack SDK
             # It's more stable and handles large files better
+            # But for DM channels, we may need to fallback to old API
             with open(file_path, 'rb') as file_content:
-                response = client.files_upload_v2(
-                    channel=target_channel,  # Note: 'channel' not 'channels' for v2
-                    file=file_content,
-                    filename=os.path.basename(file_path),
-                    initial_comment=initial_comment,
-                    thread_ts=thread_ts
-                )
-            
-            # files_upload_v2 returns different structure
-            if response.get("ok"):
-                file_info = response.get("file", {})
-                return {
-                    "success": True,
-                    "file_id": file_info.get("id", "unknown"),
-                    "file_name": file_info.get("name", os.path.basename(file_path)),
-                    "channel": target_channel
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": response.get("error", "Unknown error from Slack API"),
-                    "file_path": file_path,
-                    "channel": target_channel
-                }
+                try:
+                    response = client.files_upload_v2(
+                        channel=target_channel,  # Note: 'channel' not 'channels' for v2
+                        file=file_content,
+                        filename=os.path.basename(file_path),
+                        initial_comment=initial_comment,
+                        thread_ts=thread_ts
+                    )
+                    
+                    # files_upload_v2 returns different structure
+                    if response.get("ok"):
+                        file_info = response.get("file", {})
+                        return {
+                            "success": True,
+                            "file_id": file_info.get("id", "unknown"),
+                            "file_name": file_info.get("name", os.path.basename(file_path)),
+                            "channel": target_channel
+                        }
+                    else:
+                        error_msg = response.get("error", "Unknown error from Slack API")
+                        # For DM channels, try fallback to old API if v2 fails
+                        if is_dm_channel and "channel_not_found" in error_msg.lower():
+                            file_content.seek(0)
+                            response = client.files_upload(
+                                channels=target_channel,
+                                file=file_content,
+                                filename=os.path.basename(file_path),
+                                initial_comment=initial_comment,
+                                thread_ts=thread_ts
+                            )
+                            
+                            if response.get("ok"):
+                                file_info = response.get("file", {})
+                                return {
+                                    "success": True,
+                                    "file_id": file_info.get("id", "unknown"),
+                                    "file_name": file_info.get("name", os.path.basename(file_path)),
+                                    "channel": target_channel,
+                                    "delivery_method": "DM (fallback API)"
+                                }
+                            else:
+                                return {
+                                    "success": False,
+                                    "error": f"Both upload methods failed. Last error: {response.get('error', 'Unknown')}. Original v2 error: {error_msg}",
+                                    "file_path": file_path,
+                                    "channel": target_channel
+                                }
+                        else:
+                            return {
+                                "success": False,
+                                "error": error_msg,
+                                "file_path": file_path,
+                                "channel": target_channel
+                            }
+                except Exception as e:
+                    # If v2 fails completely and it's a DM, try old API
+                    if is_dm_channel:
+                        try:
+                            file_content.seek(0)
+                            response = client.files_upload(
+                                channels=target_channel,
+                                file=file_content,
+                                filename=os.path.basename(file_path),
+                                initial_comment=initial_comment,
+                                thread_ts=thread_ts
+                            )
+                            
+                            if response.get("ok"):
+                                file_info = response.get("file", {})
+                                return {
+                                    "success": True,
+                                    "file_id": file_info.get("id", "unknown"),
+                                    "file_name": file_info.get("name", os.path.basename(file_path)),
+                                    "channel": target_channel,
+                                    "delivery_method": "DM (fallback API)"
+                                }
+                            else:
+                                return {
+                                    "success": False,
+                                    "error": f"Fallback upload failed: {response.get('error', 'Unknown')}. Original exception: {str(e)}",
+                                    "file_path": file_path,
+                                    "channel": target_channel
+                                }
+                        except Exception as e2:
+                            return {
+                                "success": False,
+                                "error": f"Both upload methods failed. v2 exception: {str(e)}, fallback exception: {str(e2)}",
+                                "file_path": file_path,
+                                "channel": target_channel
+                            }
+                    else:
+                        return {
+                            "success": False,
+                            "error": str(e),
+                            "file_path": file_path,
+                            "channel": target_channel
+                        }
         except Exception as e:
             return {
                 "success": False,
@@ -147,31 +224,97 @@ class SlackTool:
                     raise
             
             # Upload file to DM
+            # Try files_upload_v2 first, but fallback to files_upload for DM channels
+            # as v2 sometimes has issues with DM channels
             with open(file_path, 'rb') as file_content:
-                response = client.files_upload_v2(
-                    channel=target_dm_channel,
-                    file=file_content,
-                    filename=os.path.basename(file_path),
-                    initial_comment=initial_comment
-                )
-            
-            if response.get("ok"):
-                file_info = response.get("file", {})
-                return {
-                    "success": True,
-                    "file_id": file_info.get("id", "unknown"),
-                    "file_name": file_info.get("name", os.path.basename(file_path)),
-                    "channel": target_dm_channel,
-                    "delivery_method": "DM"
-                }
-            else:
-                error_msg = response.get("error", "Unknown error from Slack API")
-                return {
-                    "success": False,
-                    "error": error_msg,
-                    "file_path": file_path,
-                    "channel": target_dm_channel
-                }
+                # First try files_upload_v2
+                try:
+                    response = client.files_upload_v2(
+                        channel=target_dm_channel,
+                        file=file_content,
+                        filename=os.path.basename(file_path),
+                        initial_comment=initial_comment
+                    )
+                    
+                    if response.get("ok"):
+                        file_info = response.get("file", {})
+                        return {
+                            "success": True,
+                            "file_id": file_info.get("id", "unknown"),
+                            "file_name": file_info.get("name", os.path.basename(file_path)),
+                            "channel": target_dm_channel,
+                            "delivery_method": "DM"
+                        }
+                    else:
+                        error_msg = response.get("error", "Unknown error from Slack API")
+                        # If channel_not_found, try fallback to old API
+                        if "channel_not_found" in error_msg.lower():
+                            # Reset file pointer and try old API
+                            file_content.seek(0)
+                            response = client.files_upload(
+                                channels=target_dm_channel,
+                                file=file_content,
+                                filename=os.path.basename(file_path),
+                                initial_comment=initial_comment
+                            )
+                            
+                            if response.get("ok"):
+                                file_info = response.get("file", {})
+                                return {
+                                    "success": True,
+                                    "file_id": file_info.get("id", "unknown"),
+                                    "file_name": file_info.get("name", os.path.basename(file_path)),
+                                    "channel": target_dm_channel,
+                                    "delivery_method": "DM (fallback API)"
+                                }
+                            else:
+                                return {
+                                    "success": False,
+                                    "error": f"Both upload methods failed. Last error: {response.get('error', 'Unknown')}. Original v2 error: {error_msg}",
+                                    "file_path": file_path,
+                                    "channel": target_dm_channel
+                                }
+                        else:
+                            return {
+                                "success": False,
+                                "error": error_msg,
+                                "file_path": file_path,
+                                "channel": target_dm_channel
+                            }
+                except Exception as e:
+                    # If v2 fails completely, try old API
+                    try:
+                        file_content.seek(0)
+                        response = client.files_upload(
+                            channels=target_dm_channel,
+                            file=file_content,
+                            filename=os.path.basename(file_path),
+                            initial_comment=initial_comment
+                        )
+                        
+                        if response.get("ok"):
+                            file_info = response.get("file", {})
+                            return {
+                                "success": True,
+                                "file_id": file_info.get("id", "unknown"),
+                                "file_name": file_info.get("name", os.path.basename(file_path)),
+                                "channel": target_dm_channel,
+                                "delivery_method": "DM (fallback API)"
+                            }
+                        else:
+                            return {
+                                "success": False,
+                                "error": f"Fallback upload failed: {response.get('error', 'Unknown')}. Original exception: {str(e)}",
+                                "file_path": file_path,
+                                "channel": target_dm_channel
+                            }
+                    except Exception as e2:
+                        return {
+                            "success": False,
+                            "error": f"Both upload methods failed. v2 exception: {str(e)}, fallback exception: {str(e2)}",
+                            "file_path": file_path,
+                            "channel": target_dm_channel
+                        }
         except Exception as e:
             return {
                 "success": False,
