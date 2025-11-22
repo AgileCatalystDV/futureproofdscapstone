@@ -18,20 +18,23 @@ graph TB
     end
     
     subgraph "Query Layer"
-        Agent -->|Execute| PandaAI[PandaAI<br/>GPT-4 mini]
-        PandaAI -->|Natural Language → SQL| QueryTool[Database Query Tool]
+        Agent -->|Execute| PandaAI[PandaAI Agent<br/>LiteLLM + GPT-4o-mini]
+        PandaAI -->|Natural Language → Pandas| QueryTool[Database Query Tool]
+        QueryTool -->|Uses| DataFrames[SmartDataframes<br/>Multi-table support]
     end
     
     subgraph "Database Layer"
         QueryTool -->|Option 1: Mock| MockDB[(Mock Postgres<br/>Development)]
-        QueryTool -->|Option 2: MCP| MCPToolbox[MCP DatabaseToolbox]
+        QueryTool -->|Option 2: Direct| DirectDB[(Direct PostgreSQL<br/>Production)]
+        QueryTool -->|Option 3: MCP| MCPToolbox[MCP DatabaseToolbox]
         MCPToolbox -->|Connection Pool| RealDB[(Real Postgres<br/>Production)]
+        QueryTool -->|Cache| Cache[DataFrame Cache<br/>TTL: 3600s]
     end
     
     subgraph "Configuration"
         Schema[Schema YAML<br/>semantic_model/schema.yaml]
         GuardrailsYAML[Guardrails YAML<br/>semantic_model/guardrails.yaml]
-        EnvVars[.env<br/>Environment Variables]
+        EnvVars[.env<br/>Environment Variables<br/>OPENAI_API_KEY, POSTGRESS_*]
         ToolsYAML[tools.yaml<br/>MCP Database Config]
     end
     
@@ -63,8 +66,10 @@ sequenceDiagram
     participant Bot as Slack Bot Handler
     participant Agent as PandaAI Agent
     participant Guardrails as Guardrails Validator
-    participant PandaAI as PandaAI (GPT-4 mini)
-    participant DB as Database (Mock/MCP)
+    participant QueryTool as Database Query Tool
+    participant PandaAI as PandasAI Agent<br/>(LiteLLM + GPT-4o-mini)
+    participant Cache as DataFrame Cache
+    participant DB as Database (Mock/Direct/MCP)
     
     User->>Bot: /query "How many users?"
     Bot->>Agent: process_query(query)
@@ -72,10 +77,22 @@ sequenceDiagram
     
     alt Query is safe
         Guardrails-->>Agent: ✅ Validation passed
-        Agent->>PandaAI: query_with_pandasai(query)
-        PandaAI->>DB: Execute SQL query
-        DB-->>PandaAI: Return results
-        PandaAI-->>Agent: Formatted result
+        Agent->>QueryTool: query_with_pandasai(query)
+        QueryTool->>Cache: Check cache
+        
+        alt Cache hit
+            Cache-->>QueryTool: Return cached dataframes
+        else Cache miss
+            QueryTool->>DB: Load dataframes
+            DB-->>QueryTool: Return dataframes
+            QueryTool->>Cache: Store in cache (TTL: 3600s)
+        end
+        
+        QueryTool->>PandaAI: Create Agent with dataframes
+        PandaAI->>PandaAI: Generate pandas code<br/>(NO SQL queries)
+        PandaAI->>PandaAI: Execute pandas operations
+        PandaAI-->>QueryTool: Return results
+        QueryTool-->>Agent: Formatted result
         Agent-->>Bot: Success response
         Bot-->>User: ✅ Result displayed
     else Query is unsafe
@@ -90,21 +107,27 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph "capstone-slackbot/"
-        subgraph "slack_bot/"
-            Handler[handler.py<br/>Slack Bolt Handler]
-        end
+        Main[main.py<br/>Entry Point]
         
-        subgraph "agent/"
-            PandaAgent[pandasai_agent.py<br/>Orchestrator]
-        end
-        
-        subgraph "mcp_server/"
-            MCPServer[server.py<br/>MCP Server]
-            subgraph "tools/"
-                GuardrailsTool[guardrails.py<br/>Validator]
-                DBQueryTool[db_query.py<br/>Query Executor]
-                MCPDBTool[mcp_database.py<br/>MCP Wrapper]
-                SlackTool[slack.py<br/>Slack API]
+        subgraph "capstone_slackbot/"
+            subgraph "slack_bot/"
+                Handler[handler.py<br/>Slack Bolt Handler]
+                MockSlack[mock_slack.py<br/>CLI Mock Mode]
+            end
+            
+            subgraph "agent/"
+                PandaAgent[pandasai_agent.py<br/>Orchestrator]
+            end
+            
+            subgraph "mcp_server/"
+                MCPServer[server.py<br/>MCP Server]
+                subgraph "tools/"
+                    GuardrailsTool[guardrails.py<br/>Validator]
+                    DBQueryTool[db_query.py<br/>Query Executor]
+                    MCPDBTool[mcp_database.py<br/>MCP Wrapper]
+                    MockDB[mock_database.py<br/>Mock Database]
+                    SlackTool[slack.py<br/>Slack API]
+                end
             end
         end
         
@@ -112,13 +135,21 @@ graph LR
             Schema[schema.yaml<br/>Database Schema]
             GuardrailsYAML[guardrails.yaml<br/>Security Rules]
         end
+        
+        subgraph "tests/"
+            TestGuardrails[test_guardrails.py<br/>Guardrails Tests]
+            TestSetup[test_setup.py<br/>Setup Tests]
+        end
     end
     
+    Main --> Handler
+    Handler --> MockSlack
     Handler --> PandaAgent
     PandaAgent --> GuardrailsTool
     PandaAgent --> DBQueryTool
     PandaAgent --> SlackTool
     DBQueryTool --> MCPDBTool
+    DBQueryTool --> MockDB
     GuardrailsTool --> GuardrailsYAML
     DBQueryTool --> Schema
     MCPServer --> GuardrailsTool
@@ -132,17 +163,17 @@ graph LR
 graph TB
     subgraph "Docker Compose"
         subgraph "slack-bot service"
-            SlackContainer[Slack Bot Container<br/>Python + Slack Bolt]
+            SlackContainer[Slack Bot Container<br/>Python + Slack Bolt<br/>Entry: poetry run slack-bot]
         end
         
         subgraph "mcp-server service"
-            MCPContainer[MCP Server Container<br/>Python + MCP Tools]
+            MCPContainer[MCP Server Container<br/>Python + MCP Tools<br/>Entry: poetry run mcp-server]
         end
     end
     
     subgraph "External Services"
         SlackAPI[Slack API<br/>Socket Mode]
-        OpenAIAPI[OpenAI API<br/>GPT-4 mini]
+        OpenAIAPI[OpenAI API<br/>GPT-4o-mini via LiteLLM]
         PostgresDB[(Postgres Database<br/>Cloud/Remote)]
     end
     
@@ -227,24 +258,37 @@ graph TB
 
 ```
 capstone-slackbot/
-├── 📁 slack_bot/
-│   └── handler.py          → Slack Bolt handler
-├── 📁 agent/
-│   └── pandasai_agent.py  → Main orchestrator
-├── 📁 mcp_server/
-│   ├── server.py          → MCP server
-│   └── 📁 tools/
-│       ├── guardrails.py  → Security validator
-│       ├── db_query.py    → Database queries
-│       ├── mcp_database.py → MCP wrapper
-│       └── slack.py       → Slack posting
-├── 📁 semantic_model/
+├── pyproject.toml          → Poetry config (dependencies, entry points)
+├── AGENTS.md               → Cursor development rules
+├── PROJECT_CONTEXT.md      → Project scope & goals
+├── ARCHITECTURE.md         → This file
+├── .env.example            → Template for environment variables
+├── README.md               → Setup & run instructions
+├── capstone_slackbot/      → Main package directory
+│   ├── __init__.py
+│   ├── main.py             → Entry point (poetry run slack-bot)
+│   ├── agent/              → Agent orchestrator subsystem
+│   │   └── pandasai_agent.py
+│   ├── mcp_server/         → MCP server subsystem
+│   │   ├── server.py       → MCP server (poetry run mcp-server)
+│   │   └── tools/          → MCP tools
+│   │       ├── guardrails.py    → Security validator
+│   │       ├── db_query.py      → Database queries (PandasAI Agent)
+│   │       ├── mcp_database.py  → MCP wrapper
+│   │       ├── mock_database.py → Mock database implementation
+│   │       └── slack.py         → Slack posting
+│   └── slack_bot/          → Slack bot subsystem
+│       ├── handler.py      → Slack Bolt handler
+│       └── mock_slack.py   → CLI mock mode
+├── semantic_model/         → Schema & security config
 │   ├── schema.yaml        → Database schema
-│   └── guardrails.yaml   → Security rules
-├── .env                   → Environment variables (handmatig)
-├── tools.yaml             → MCP config (van tools.yaml.example)
-├── docker-compose.yml     → Docker orchestration
-└── Dockerfile             → Container definition
+│   └── guardrails.yaml    → Security rules
+├── tests/                  → Test suite
+│   ├── test_guardrails.py → Guardrails tests
+│   └── test_setup.py      → Setup verification tests
+├── tools.yaml.example      → MCP config template
+├── docker-compose.yml      → Docker orchestration
+└── Dockerfile              → Container definition
 ```
 
 ## Technology Stack
@@ -261,8 +305,10 @@ graph TB
     end
     
     subgraph "AI/ML"
-        PandaAI[PandaAI]
-        OpenAI[OpenAI GPT-4 mini]
+        PandaAI[PandaAI 3.0]
+        Agent[PandasAI Agent<br/>Multi-table support]
+        LiteLLM[LiteLLM<br/>LLM abstraction]
+        OpenAI[OpenAI GPT-4o-mini]
     end
     
     subgraph "Database"
@@ -278,13 +324,47 @@ graph TB
     Slack --> SlackBolt
     SlackBolt --> Python
     Python --> PandaAI
-    PandaAI --> OpenAI
+    PandaAI --> Agent
+    Agent --> LiteLLM
+    LiteLLM --> OpenAI
     Python --> Postgres
     Python --> Mock
     Python --> MCP
     MCP --> Postgres
     Docker --> Python
 ```
+
+## Key Architecture Decisions
+
+### PandasAI Agent with Multiple DataFrames
+- **Why**: Enables queries across multiple tables (e.g., users + subscriptions)
+- **Implementation**: Uses `PandasAI Agent` with a list of `SmartDataframes` instead of single `SmartDataframe`
+- **Benefit**: Better multi-table query support without manual joins
+
+### SQL Queries Disabled
+- **Why**: DuckDB compatibility issues with certain SQL functions (e.g., `sequence()`)
+- **Implementation**: `enable_sql_query: False` in PandasAI config + custom instructions
+- **Benefit**: Uses only pandas operations (merge, groupby, filter) which are more reliable
+
+### DataFrame Caching
+- **Why**: Reduce database load for repeated queries
+- **Implementation**: In-memory cache with configurable TTL (default: 3600s)
+- **Benefit**: Faster response times and reduced database connections
+
+### LiteLLM Integration
+- **Why**: Flexible LLM provider abstraction
+- **Implementation**: Uses `pandasai-litellm` package with LiteLLM wrapper
+- **Benefit**: Easy to switch LLM providers or models (currently GPT-4o-mini)
+
+### Mock Classes Separation
+- **Why**: Better code organization and readability
+- **Implementation**: `mock_database.py` and `mock_slack.py` as separate modules
+- **Benefit**: Cleaner codebase, easier to maintain and test
+
+### Package Structure
+- **Why**: Standard Python package layout for better distribution
+- **Implementation**: `capstone_slackbot/` as main package with `main.py` entry point
+- **Benefit**: Proper Python package structure, Poetry scripts integration
 
 ---
 

@@ -284,9 +284,18 @@ class DatabaseQueryTool:
             
             # Create SmartDataframes for each table
             # Agent expects a list of SmartDataframes
+            # Disable SQL queries to avoid DuckDB compatibility issues
+            # Use only pandas operations for better compatibility
+            custom_instructions = self._get_pandasai_context()
+            if custom_instructions:
+                custom_instructions += "\n\nIMPORTANT: Use only pandas DataFrame operations. Do NOT use SQL queries. Work directly with the DataFrames using pandas methods like merge, groupby, filter, etc."
+            else:
+                custom_instructions = "IMPORTANT: Use only pandas DataFrame operations. Do NOT use SQL queries. Work directly with the DataFrames using pandas methods like merge, groupby, filter, etc."
+            
             config = {
                 "llm": self.llm,
-                "custom_instructions": self._get_pandasai_context()
+                "custom_instructions": custom_instructions,
+                "enable_sql_query": False  # Disable SQL to avoid DuckDB issues
             }
             
             # Create SmartDataframes for all available tables
@@ -313,11 +322,21 @@ class DatabaseQueryTool:
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
-            print(f"❌ Error in query_with_pandasai_async: {str(e)}")
+            error_msg = str(e)
+            
+            # Handle specific PandasAI errors
+            if "MaliciousQueryError" in error_msg or "unauthorized table" in error_msg.lower():
+                # This is often a false positive from PandasAI's code cleaning
+                error_msg = f"Query validation error: {error_msg}. This may be caused by PandasAI's internal SQL parsing. Try rephrasing your query."
+            elif "sequence" in error_msg.lower() and ("does not exist" in error_msg.lower() or "Catalog Error" in error_msg):
+                # DuckDB compatibility issue
+                error_msg = f"SQL compatibility error: {error_msg}. PandasAI tried to use a SQL function not supported by DuckDB. Try rephrasing your query to be simpler or more explicit."
+            
+            print(f"❌ Error in query_with_pandasai_async: {error_msg}")
             print(f"Traceback: {error_trace}")
             return {
                 "success": False,
-                "error": str(e),
+                "error": error_msg,
                 "result": None,
                 "traceback": error_trace
             }
@@ -389,9 +408,18 @@ class DatabaseQueryTool:
             
             # Create SmartDataframes for each table
             # Agent expects a list of SmartDataframes
+            # Disable SQL queries to avoid DuckDB compatibility issues
+            # Use only pandas operations for better compatibility
+            custom_instructions = self._get_pandasai_context()
+            if custom_instructions:
+                custom_instructions += "\n\nIMPORTANT: Use only pandas DataFrame operations. Do NOT use SQL queries. Work directly with the DataFrames using pandas methods like merge, groupby, filter, etc."
+            else:
+                custom_instructions = "IMPORTANT: Use only pandas DataFrame operations. Do NOT use SQL queries. Work directly with the DataFrames using pandas methods like merge, groupby, filter, etc."
+            
             config = {
                 "llm": self.llm,
-                "custom_instructions": self._get_pandasai_context()
+                "custom_instructions": custom_instructions,
+                "enable_sql_query": False  # Disable SQL to avoid DuckDB issues
             }
             
             # Create SmartDataframes for all available tables
@@ -418,11 +446,21 @@ class DatabaseQueryTool:
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
-            print(f"❌ Error in query_with_pandasai: {str(e)}")
+            error_msg = str(e)
+            
+            # Handle specific PandasAI errors
+            if "MaliciousQueryError" in error_msg or "unauthorized table" in error_msg.lower():
+                # This is often a false positive from PandasAI's code cleaning
+                error_msg = f"Query validation error: {error_msg}. This may be caused by PandasAI's internal SQL parsing. Try rephrasing your query."
+            elif "sequence" in error_msg.lower() and ("does not exist" in error_msg.lower() or "Catalog Error" in error_msg):
+                # DuckDB compatibility issue
+                error_msg = f"SQL compatibility error: {error_msg}. PandasAI tried to use a SQL function not supported by DuckDB. Try rephrasing your query to be simpler or more explicit."
+            
+            print(f"❌ Error in query_with_pandasai: {error_msg}")
             print(f"Traceback: {error_trace}")
             return {
                 "success": False,
-                "error": str(e),
+                "error": error_msg,
                 "result": None,
                 "traceback": error_trace
             }
