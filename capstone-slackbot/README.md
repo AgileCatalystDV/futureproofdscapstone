@@ -106,21 +106,25 @@ capstone-slackbot/
 
 4. **Verify setup:**
    ```bash
-   python test_setup.py
+   poetry run python tests/test_setup.py
    ```
 
 5. **Run locally:**
 
    **With mock Slack (no Slack tokens needed):**
    ```bash
-   poetry run python -m slack_bot.handler --mock
+   poetry run slack-bot --mock
    # Or set environment variable:
-   USE_MOCK_SLACK=true poetry run python -m slack_bot.handler
+   USE_MOCK_SLACK=true poetry run slack-bot
+   # Or directly:
+   poetry run python -m capstone_slackbot.main --mock
    ```
    
    **With real Slack (requires Slack tokens in .env):**
    ```bash
-   poetry run python -m slack_bot.handler
+   poetry run slack-bot
+   # Or directly:
+   poetry run python -m capstone_slackbot.main
    ```
 
 ### Docker Setup
@@ -219,7 +223,7 @@ print(result)
 **Option 2: Mock Slack mode (interactive CLI)**
 ```bash
 # No Slack tokens needed!
-poetry run python -m slack_bot.handler --mock
+poetry run slack-bot --mock
 ```
 
 Then type queries interactively:

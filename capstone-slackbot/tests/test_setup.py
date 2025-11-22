@@ -129,7 +129,7 @@ def main():
         print("\nNext steps:")
         print("1. Set OPENAI_API_KEY environment variable")
         print("2. Set SLACK_BOT_TOKEN and SLACK_APP_TOKEN")
-        print("3. Run: python -m slack_bot.handler")
+        print("3. Run: poetry run slack-bot")
         return 0
     else:
         print("\n❌ Some tests failed. Check errors above.")
