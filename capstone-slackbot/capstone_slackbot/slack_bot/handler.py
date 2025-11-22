@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-from agent.pandasai_agent import PandaAIAgent
-from slack_bot.mock_slack import MockSlackHandler
+from capstone_slackbot.agent.pandasai_agent import PandaAIAgent
+from capstone_slackbot.slack_bot.mock_slack import MockSlackHandler
 
 # Load .env file from project root
-env_path = Path(__file__).parent.parent / ".env"
+env_path = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 

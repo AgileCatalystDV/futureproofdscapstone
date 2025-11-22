@@ -30,8 +30,8 @@ mypy = "^1.0.0"
 pytest-cov = "^4.0.0"
 
 [tool.poetry.scripts]
-slack-bot = "slack_bot.handler:main"
-mcp-server = "mcp_server.server:main"
+slack-bot = "capstone_slackbot.main:main"
+mcp-server = "capstone_slackbot.mcp_server.server:main"
 
 [build-system]
 requires = ["poetry-core"]

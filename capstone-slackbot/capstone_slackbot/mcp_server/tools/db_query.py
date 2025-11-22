@@ -17,7 +17,7 @@ except ImportError:
     LiteLLM = None
 
 # Import mock classes from separate module
-from mcp_server.tools.mock_database import MockPostgresConnection
+from capstone_slackbot.mcp_server.tools.mock_database import MockPostgresConnection
 
 
 class DatabaseQueryTool:
@@ -41,7 +41,7 @@ class DatabaseQueryTool:
         elif use_mcp:
             # Try to import MCP database tool
             try:
-                from mcp_server.tools.mcp_database import MCPDatabaseQueryTool
+                from capstone_slackbot.mcp_server.tools.mcp_database import MCPDatabaseQueryTool
                 self.mcp_tool = MCPDatabaseQueryTool()
                 self.conn = None
             except ImportError as e:
@@ -56,7 +56,9 @@ class DatabaseQueryTool:
         
         # Load schema for context
         if schema_path is None:
-            base_dir = Path(__file__).parent.parent.parent
+            # Go up from: capstone_slackbot/mcp_server/tools/db_query.py
+            # To: capstone-slackbot/semantic_model/schema.yaml
+            base_dir = Path(__file__).parent.parent.parent.parent
             schema_path = base_dir / "semantic_model" / "schema.yaml"
         
         self.schema_path = Path(schema_path)

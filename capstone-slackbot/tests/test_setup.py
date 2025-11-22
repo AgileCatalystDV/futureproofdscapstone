@@ -11,11 +11,11 @@ def test_imports():
     """Test that all imports work"""
     print("Testing imports...")
     try:
-        from mcp_server.tools.guardrails import GuardrailsValidator
-        from mcp_server.tools.db_query import DatabaseQueryTool
-        from mcp_server.tools.mock_database import MockPostgresConnection
-        from mcp_server.tools.slack import SlackTool
-        from agent.pandasai_agent import PandaAIAgent
+        from capstone_slackbot.mcp_server.tools.guardrails import GuardrailsValidator
+        from capstone_slackbot.mcp_server.tools.db_query import DatabaseQueryTool
+        from capstone_slackbot.mcp_server.tools.mock_database import MockPostgresConnection
+        from capstone_slackbot.mcp_server.tools.slack import SlackTool
+        from capstone_slackbot.agent.pandasai_agent import PandaAIAgent
         print("✅ All imports successful")
         return True
     except ImportError as e:
@@ -26,7 +26,7 @@ def test_guardrails():
     """Test guardrails validator"""
     print("\nTesting guardrails...")
     try:
-        from mcp_server.tools.guardrails import GuardrailsValidator
+        from capstone_slackbot.mcp_server.tools.guardrails import GuardrailsValidator
         
         validator = GuardrailsValidator()
         
@@ -56,7 +56,7 @@ def test_mock_db():
     """Test mock database connection"""
     print("\nTesting mock database...")
     try:
-        from mcp_server.tools.mock_database import MockPostgresConnection
+        from capstone_slackbot.mcp_server.tools.mock_database import MockPostgresConnection
         
         conn = MockPostgresConnection()
         
@@ -80,7 +80,7 @@ def test_schema_loading():
     """Test schema YAML loading"""
     print("\nTesting schema loading...")
     try:
-        from mcp_server.tools.db_query import DatabaseQueryTool
+        from capstone_slackbot.mcp_server.tools.db_query import DatabaseQueryTool
         
         db_tool = DatabaseQueryTool(use_mock=True)
         schema = db_tool.schema

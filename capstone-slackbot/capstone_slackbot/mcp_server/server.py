@@ -8,9 +8,9 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 from dotenv import load_dotenv
 
-from mcp_server.tools.guardrails import GuardrailsValidator
-from mcp_server.tools.db_query import DatabaseQueryTool
-from mcp_server.tools.slack import SlackTool
+from capstone_slackbot.mcp_server.tools.guardrails import GuardrailsValidator
+from capstone_slackbot.mcp_server.tools.db_query import DatabaseQueryTool
+from capstone_slackbot.mcp_server.tools.slack import SlackTool
 
 # Load .env file from project root
 env_path = Path(__file__).parent.parent.parent / ".env"

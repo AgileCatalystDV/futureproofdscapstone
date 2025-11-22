@@ -31,8 +31,10 @@ class GuardrailsValidator:
     def __init__(self, guardrails_path: Optional[Path] = None):
         """Initialize validator with guardrails config"""
         if guardrails_path is None:
-            # Default to semantic_model/guardrails.yaml relative to this file
-            base_dir = Path(__file__).parent.parent.parent
+            # Default to semantic_model/guardrails.yaml relative to project root
+            # Go up from: capstone_slackbot/mcp_server/tools/guardrails.py
+            # To: capstone-slackbot/semantic_model/guardrails.yaml
+            base_dir = Path(__file__).parent.parent.parent.parent
             guardrails_path = base_dir / "semantic_model" / "guardrails.yaml"
         
         self.guardrails_path = Path(guardrails_path)

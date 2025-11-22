@@ -33,19 +33,33 @@ Slack User → Slack Bot → PandaAI Agent → Guardrails → PandaAI → Databa
 
 ```
 capstone-slackbot/
-├── mcp_server/              # MCP server implementation
-│   ├── tools/               # MCP tools
-│   │   ├── guardrails.py   # Query validation
-│   │   ├── db_query.py     # Database query execution
-│   │   └── slack.py        # Slack posting
-│   └── server.py           # MCP server main
-├── agent/                   # Agent orchestrator
-│   └── pandasai_agent.py   # PandaAI agent wrapper
-├── slack_bot/              # Slack bot handler
-│   └── handler.py         # Slack Bolt event handlers
+├── pyproject.toml          # Poetry config (dependencies, entry point)
+├── AGENTS.md               # Cursor development rules
+├── PROJECT_CONTEXT.md      # Project scope & goals
+├── .env.example            # Template for environment variables
+├── .gitignore              # Ignore venv, .env, __pycache__, etc.
+├── README.md               # Quick setup + run instructions
+├── capstone_slackbot/      # Main package directory
+│   ├── __init__.py
+│   ├── main.py             # Entry script / agent entrypoint
+│   ├── agent/              # Agent orchestrator subsystem
+│   │   └── pandasai_agent.py
+│   ├── mcp_server/         # MCP server subsystem
+│   │   ├── server.py
+│   │   └── tools/          # MCP tools
+│   │       ├── guardrails.py
+│   │       ├── db_query.py
+│   │       ├── mock_database.py
+│   │       └── slack.py
+│   └── slack_bot/          # Slack bot subsystem
+│       ├── handler.py
+│       └── mock_slack.py
 ├── semantic_model/         # Schema and guardrails
-│   ├── schema.yaml        # Database schema definition
-│   └── guardrails.yaml    # Security rules
+│   ├── schema.yaml
+│   └── guardrails.yaml
+├── tests/                  # Test suite
+│   ├── test_guardrails.py
+│   └── test_setup.py
 ├── docker-compose.yml      # Docker orchestration
 ├── Dockerfile             # Container definition
 ├── requirements.txt       # Python dependencies
