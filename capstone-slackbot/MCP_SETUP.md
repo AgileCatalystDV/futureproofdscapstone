@@ -43,16 +43,21 @@ Verify installation:
 toolbox --version
 ```
 
-### 2. Install Python MCP Client
+### 2. Install Python MCP Client (Optional)
 
+**Note:** The MCP Python SDK is not yet available on PyPI. You have two options:
+
+**Option A: Install from GitHub (if you need Python MCP client)**
 ```bash
-pip install mcp
+pip install git+https://github.com/modelcontextprotocol/python-sdk.git
 ```
 
-Or add to requirements.txt (already included):
-```
-mcp>=0.1.0
-```
+**Option B: Use MCP DatabaseToolbox binary directly (Recommended)**
+- The MCP DatabaseToolbox binary handles MCP protocol internally
+- No Python MCP client needed
+- Code handles missing MCP gracefully with ImportError fallback
+
+The code in `mcp_database.py` will work with or without the Python MCP SDK installed.
 
 ## Configuration
 

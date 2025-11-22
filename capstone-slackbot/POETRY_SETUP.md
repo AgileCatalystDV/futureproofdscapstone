@@ -201,6 +201,19 @@ poetry lock
 poetry install
 ```
 
+### "mcp package not found" / "version solving failed"
+
+**Probleem:** Poetry kan `mcp` package niet vinden
+
+**Oplossing:** Het MCP Python SDK staat nog niet op PyPI. Dit is geen probleem:
+- De code handelt dit netjes af met `ImportError` fallback
+- MCP DatabaseToolbox werkt zonder Python MCP SDK (gebruikt binary direct)
+- Als je Python MCP client nodig hebt, installeer van GitHub:
+  ```bash
+  poetry add git+https://github.com/modelcontextprotocol/python-sdk.git
+  ```
+- Of gebruik gewoon `poetry install` - het werkt zonder `mcp` package
+
 ### Docker: Poetry vs requirements.txt
 
 De Dockerfile gebruikt automatisch Poetry als `poetry.lock` bestaat, anders `requirements.txt`.

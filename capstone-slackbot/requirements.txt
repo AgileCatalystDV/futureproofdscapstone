@@ -14,7 +14,10 @@ slack-sdk>=3.20.0
 slack-bolt>=1.18.0
 
 # MCP (Model Context Protocol) - for DatabaseToolbox integration
-mcp>=0.1.0
+# Note: MCP Python SDK is not yet on PyPI
+# Install from GitHub: pip install git+https://github.com/modelcontextprotocol/python-sdk.git
+# Or use MCP DatabaseToolbox binary directly (recommended)
+# The code handles missing MCP gracefully with ImportError fallback
 
 # Database (for real Postgres later)
 psycopg2-binary>=2.9.0
