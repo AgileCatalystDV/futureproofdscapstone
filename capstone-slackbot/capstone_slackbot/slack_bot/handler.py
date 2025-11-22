@@ -164,17 +164,52 @@ class SlackBotHandler:
                                     print(f"      Channel: {channel_id}, File: {chart_path}")
                                     
                                     # Fallback to DM if channel upload fails
+                                    # Check if channel is already a DM (starts with 'D')
+                                    is_dm_channel = channel_id and channel_id.startswith('D')
+                                    
                                     if user_id and ("channel_not_found" in error_detail.lower() or "not_in_channel" in error_detail.lower()):
                                         print(f"      Trying DM fallback...")
-                                        dm_result = slack_tool.upload_file_to_dm(
-                                            chart_path,
-                                            user_id=user_id,
-                                            initial_comment="📊 Chart generated from query (sent via DM because bot doesn't have channel access)"
-                                        )
-                                        if dm_result.get("success"):
-                                            print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                        # If channel is already a DM, try uploading directly to it
+                                        if is_dm_channel:
+                                            print(f"      Channel is already a DM, retrying upload...")
+                                            # Retry upload to DM channel directly
+                                            retry_result = slack_tool.upload_file(
+                                                chart_path,
+                                                channel=channel_id,
+                                                initial_comment="📊 Chart generated from query"
+                                            )
+                                            if retry_result.get("success"):
+                                                print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                            else:
+                                                print(f"   ❌ DM retry failed: {retry_result.get('error', 'Unknown')}")
+                                                # If direct DM upload fails, try opening new DM
+                                                dm_result = slack_tool.upload_file_to_dm(
+                                                    chart_path,
+                                                    user_id=user_id,
+                                                    dm_channel_id=channel_id,  # Pass existing DM channel ID
+                                                    initial_comment="📊 Chart generated from query"
+                                                )
+                                                if dm_result.get("success"):
+                                                    print(f"   ✅ Uploaded to DM (via conversations.open): {os.path.basename(chart_path)}")
+                                                else:
+                                                    error_msg = dm_result.get('error', 'Unknown')
+                                                    print(f"   ❌ DM upload failed: {error_msg}")
+                                                    if dm_result.get('needs_scope'):
+                                                        print(f"   ⚠️  Please add 'im:write' scope to your Slack App!")
                                         else:
-                                            print(f"   ❌ DM upload also failed: {dm_result.get('error', 'Unknown')}")
+                                            # Try to open new DM conversation
+                                            dm_result = slack_tool.upload_file_to_dm(
+                                                chart_path,
+                                                user_id=user_id,
+                                                initial_comment="📊 Chart generated from query (sent via DM because bot doesn't have channel access)"
+                                            )
+                                            if dm_result.get("success"):
+                                                print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                            else:
+                                                error_msg = dm_result.get('error', 'Unknown')
+                                                print(f"   ❌ DM upload failed: {error_msg}")
+                                                if dm_result.get('needs_scope'):
+                                                    print(f"   ⚠️  Please add 'im:write' scope to your Slack App!")
                 print(f"{'='*60}\n")
             else:
                 error_msg = result.get('error', 'Unknown error')
@@ -270,17 +305,52 @@ class SlackBotHandler:
                                     print(f"      Channel: {channel_id}, File: {chart_path}")
                                     
                                     # Fallback to DM if channel upload fails
+                                    # Check if channel is already a DM (starts with 'D')
+                                    is_dm_channel = channel_id and channel_id.startswith('D')
+                                    
                                     if user_id and ("channel_not_found" in error_detail.lower() or "not_in_channel" in error_detail.lower()):
                                         print(f"      Trying DM fallback...")
-                                        dm_result = slack_tool.upload_file_to_dm(
-                                            chart_path,
-                                            user_id=user_id,
-                                            initial_comment="📊 Chart generated from query (sent via DM because bot doesn't have channel access)"
-                                        )
-                                        if dm_result.get("success"):
-                                            print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                        # If channel is already a DM, try uploading directly to it
+                                        if is_dm_channel:
+                                            print(f"      Channel is already a DM, retrying upload...")
+                                            # Retry upload to DM channel directly
+                                            retry_result = slack_tool.upload_file(
+                                                chart_path,
+                                                channel=channel_id,
+                                                initial_comment="📊 Chart generated from query"
+                                            )
+                                            if retry_result.get("success"):
+                                                print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                            else:
+                                                print(f"   ❌ DM retry failed: {retry_result.get('error', 'Unknown')}")
+                                                # If direct DM upload fails, try opening new DM
+                                                dm_result = slack_tool.upload_file_to_dm(
+                                                    chart_path,
+                                                    user_id=user_id,
+                                                    dm_channel_id=channel_id,  # Pass existing DM channel ID
+                                                    initial_comment="📊 Chart generated from query"
+                                                )
+                                                if dm_result.get("success"):
+                                                    print(f"   ✅ Uploaded to DM (via conversations.open): {os.path.basename(chart_path)}")
+                                                else:
+                                                    error_msg = dm_result.get('error', 'Unknown')
+                                                    print(f"   ❌ DM upload failed: {error_msg}")
+                                                    if dm_result.get('needs_scope'):
+                                                        print(f"   ⚠️  Please add 'im:write' scope to your Slack App!")
                                         else:
-                                            print(f"   ❌ DM upload also failed: {dm_result.get('error', 'Unknown')}")
+                                            # Try to open new DM conversation
+                                            dm_result = slack_tool.upload_file_to_dm(
+                                                chart_path,
+                                                user_id=user_id,
+                                                initial_comment="📊 Chart generated from query (sent via DM because bot doesn't have channel access)"
+                                            )
+                                            if dm_result.get("success"):
+                                                print(f"   ✅ Uploaded to DM: {os.path.basename(chart_path)}")
+                                            else:
+                                                error_msg = dm_result.get('error', 'Unknown')
+                                                print(f"   ❌ DM upload failed: {error_msg}")
+                                                if dm_result.get('needs_scope'):
+                                                    print(f"   ⚠️  Please add 'im:write' scope to your Slack App!")
                 print(f"{'='*60}\n")
             else:
                 error_msg = result.get('error', 'Unknown error')

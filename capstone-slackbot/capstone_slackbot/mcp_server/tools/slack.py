@@ -100,26 +100,56 @@ class SlackTool:
                 "channel": target_channel if 'target_channel' in locals() else None
             }
     
-    def upload_file_to_dm(self, file_path: str, user_id: str, initial_comment: Optional[str] = None) -> Dict:
-        """Upload a file to a user's DM channel"""
+    def upload_file_to_dm(self, file_path: str, user_id: str, initial_comment: Optional[str] = None, dm_channel_id: Optional[str] = None) -> Dict:
+        """Upload a file to a user's DM channel
+        
+        Args:
+            file_path: Path to file to upload
+            user_id: Slack user ID to send DM to
+            initial_comment: Optional comment to include with file
+            dm_channel_id: Optional DM channel ID (if already known, starts with 'D')
+        """
         try:
             client = self._get_client()
             
-            # Open a DM conversation with the user
-            dm_response = client.conversations_open(users=[user_id])
-            if not dm_response.get("ok"):
-                return {
-                    "success": False,
-                    "error": f"Could not open DM: {dm_response.get('error', 'Unknown')}",
-                    "file_path": file_path
-                }
-            
-            dm_channel_id = dm_response["channel"]["id"]
+            # If DM channel ID is already provided (e.g., from command/event), use it directly
+            if dm_channel_id and dm_channel_id.startswith('D'):
+                target_dm_channel = dm_channel_id
+            else:
+                # Try to open a DM conversation with the user
+                # Note: Requires 'im:write' scope
+                try:
+                    dm_response = client.conversations_open(users=[user_id])
+                    if not dm_response.get("ok"):
+                        error_msg = dm_response.get('error', 'Unknown')
+                        if 'missing_scope' in error_msg.lower():
+                            return {
+                                "success": False,
+                                "error": f"Missing Slack scope 'im:write' required for DM uploads. Please add this scope in your Slack App settings (OAuth & Permissions → Bot Token Scopes). Error: {error_msg}",
+                                "file_path": file_path,
+                                "needs_scope": "im:write"
+                            }
+                        return {
+                            "success": False,
+                            "error": f"Could not open DM: {error_msg}",
+                            "file_path": file_path
+                        }
+                    target_dm_channel = dm_response["channel"]["id"]
+                except Exception as e:
+                    error_str = str(e)
+                    if 'missing_scope' in error_str.lower() or 'im:write' in error_str.lower():
+                        return {
+                            "success": False,
+                            "error": f"Missing Slack scope 'im:write' required for DM uploads. Please add this scope in your Slack App settings (OAuth & Permissions → Bot Token Scopes). Error: {error_str}",
+                            "file_path": file_path,
+                            "needs_scope": "im:write"
+                        }
+                    raise
             
             # Upload file to DM
             with open(file_path, 'rb') as file_content:
                 response = client.files_upload_v2(
-                    channel=dm_channel_id,
+                    channel=target_dm_channel,
                     file=file_content,
                     filename=os.path.basename(file_path),
                     initial_comment=initial_comment
@@ -131,14 +161,16 @@ class SlackTool:
                     "success": True,
                     "file_id": file_info.get("id", "unknown"),
                     "file_name": file_info.get("name", os.path.basename(file_path)),
-                    "channel": dm_channel_id,
+                    "channel": target_dm_channel,
                     "delivery_method": "DM"
                 }
             else:
+                error_msg = response.get("error", "Unknown error from Slack API")
                 return {
                     "success": False,
-                    "error": response.get("error", "Unknown error from Slack API"),
-                    "file_path": file_path
+                    "error": error_msg,
+                    "file_path": file_path,
+                    "channel": target_dm_channel
                 }
         except Exception as e:
             return {

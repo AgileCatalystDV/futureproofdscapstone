@@ -41,6 +41,7 @@ Dit start een CLI interface waar je queries kunt testen zonder echte Slack conne
    - `chat:write` - Om berichten te sturen
    - `files:write` - Om charts te uploaden
    - `commands` - Om slash commands te gebruiken
+   - `im:write` - Om charts naar DM's te kunnen sturen (vereist voor DM fallback)
 
 ### Stap 3: Installeer App in Workspace
 
@@ -209,6 +210,7 @@ Voor real Slack integratie heb je nodig:
   - [ ] `chat:write`
   - [ ] `files:write`
   - [ ] `commands`
+  - [ ] `im:write` (vereist voor DM fallback bij chart uploads)
 - [ ] App geïnstalleerd in workspace
 - [ ] Socket Mode enabled
 - [ ] App-Level Token aangemaakt (`xapp-...`)
