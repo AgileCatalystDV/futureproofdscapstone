@@ -3,15 +3,27 @@
 ## Design outline
 
 ```mermaid
+---
+config:
+  flowchart:
+    htmlLabels: true
+---
 flowchart LR
-    U(("1. User Interface<br/>(Slack / Frontend)")) -->|Question| V(("2. Validation & Guardrails"))
-    V -->|Safe| Q(("3. Query Orchestrator"))
-    V -->|Unsafe (rejected)| R(("6. Response Handling<br/>(Formatting & Delivery)"))
-    Q -->|Check cache / load Data| D(("4. Data Access & Cache<br/>(DB + Query Tool + DataFrame Cache)"))
-    D -->|Dataframes| Q
-    Q -->|Dataframes + Question| A(("5. Analytics Agent<br/>(PandasAI + LLM)"))
-    A -->|Pandas-result| R
-    R -->|Formatted Answer<br/>+ status/feedback| U
+    U["1. User Interface<br>(Slack / Frontend)"] -- Question --> V["2. Validation & Guardrails"]
+    V -- Safe --> Q["3. Query Orchestrator"]
+    V -- Unsafe (rejected) --> R["6. Response Handling<br>(Formatting &amp; Delivery)"]
+    Q -- Check cache / load Data --> D["4. Data Access &amp; Cache<br>(DB + Query Tool + DataFrame Cache)"]
+    D -- Dataframes --> Q
+    Q -- Dataframes + Question --> A["5. Analytics Agent<br>(PandasAI + LLM)"]
+    A -- "Pandas-resultt" --> R
+    R -- Formatted Answer<br>+ status/feedback --> U
+
+    U@{ shape: rounded}
+    V@{ shape: rounded}
+    Q@{ shape: rounded}
+    R@{ shape: rounded}
+    D@{ shape: rounded}
+    A@{ shape: rounded}
 ```
 
 ## High Level Design
