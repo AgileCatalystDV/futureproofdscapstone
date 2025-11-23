@@ -18,7 +18,7 @@ class TestSlackTool(unittest.TestCase):
         self.test_token = "xoxb-test-token"
         self.test_channel = "#test-channel"
     
-    @patch('capstone_slackbot.mcp_server.tools.slack.WebClient')
+    @patch('slack_sdk.WebClient')
     def test_post_message_success(self, mock_webclient_class):
         """Test successful message posting"""
         # Setup mock
@@ -36,7 +36,7 @@ class TestSlackTool(unittest.TestCase):
         self.assertEqual(result["message"], "Test message")
         mock_client.chat_postMessage.assert_called_once()
     
-    @patch('capstone_slackbot.mcp_server.tools.slack.WebClient')
+    @patch('slack_sdk.WebClient')
     def test_post_message_failure(self, mock_webclient_class):
         """Test message posting failure"""
         # Setup mock
@@ -52,12 +52,14 @@ class TestSlackTool(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIn("error", result)
     
-    @patch('capstone_slackbot.mcp_server.tools.slack.WebClient')
+    @patch('slack_sdk.WebClient')
     def test_upload_file_success(self, mock_webclient_class):
-        """Test successful file upload"""
+        """Test successful file upload (using files_upload_v2)"""
         # Setup mock
         mock_client = MagicMock()
-        mock_client.files_upload.return_value = {
+        # files_upload_v2 returns different structure
+        mock_client.files_upload_v2.return_value = {
+            "ok": True,
             "file": {"id": "F123456", "name": "test.png"}
         }
         mock_webclient_class.return_value = mock_client
@@ -75,13 +77,14 @@ class TestSlackTool(unittest.TestCase):
             # Assertions
             self.assertTrue(result["success"])
             self.assertEqual(result["file_id"], "F123456")
-            self.assertEqual(result["file_name"], os.path.basename(tmp_path))
-            mock_client.files_upload.assert_called_once()
+            self.assertEqual(result["file_name"], "test.png")
+            # Should use files_upload_v2, not files_upload
+            mock_client.files_upload_v2.assert_called()
         finally:
             # Cleanup
             os.unlink(tmp_path)
     
-    @patch('capstone_slackbot.mcp_server.tools.slack.WebClient')
+    @patch('slack_sdk.WebClient')
     def test_post_result_without_charts(self, mock_webclient_class):
         """Test post_result without charts"""
         # Setup mock
@@ -98,13 +101,15 @@ class TestSlackTool(unittest.TestCase):
         self.assertNotIn("charts", result)
         mock_client.chat_postMessage.assert_called_once()
     
-    @patch('capstone_slackbot.mcp_server.tools.slack.WebClient')
+    @patch('slack_sdk.WebClient')
     def test_post_result_with_charts(self, mock_webclient_class):
         """Test post_result with charts"""
         # Setup mock
         mock_client = MagicMock()
         mock_client.chat_postMessage.return_value = {"ts": "1234567890.123456"}
-        mock_client.files_upload.return_value = {
+        # files_upload_v2 returns different structure
+        mock_client.files_upload_v2.return_value = {
+            "ok": True,
             "file": {"id": "F123456", "name": "test.png"}
         }
         mock_webclient_class.return_value = mock_client
@@ -124,12 +129,13 @@ class TestSlackTool(unittest.TestCase):
             self.assertIn("charts", result)
             self.assertEqual(len(result["charts"]), 1)
             mock_client.chat_postMessage.assert_called_once()
-            mock_client.files_upload.assert_called_once()
+            # Should use files_upload_v2
+            mock_client.files_upload_v2.assert_called()
         finally:
             # Cleanup
             os.unlink(chart_path)
     
-    @patch('capstone_slackbot.mcp_server.tools.slack.WebClient')
+    @patch('slack_sdk.WebClient')
     def test_post_result_with_nonexistent_chart(self, mock_webclient_class):
         """Test post_result with nonexistent chart file"""
         # Setup mock
@@ -146,9 +152,9 @@ class TestSlackTool(unittest.TestCase):
         # Chart upload should be skipped, so no charts in response
         self.assertNotIn("charts", result)
         mock_client.chat_postMessage.assert_called_once()
-        mock_client.files_upload.assert_not_called()
+        mock_client.files_upload_v2.assert_not_called()
     
-    @patch('capstone_slackbot.mcp_server.tools.slack.WebClient')
+    @patch('slack_sdk.WebClient')
     def test_post_result_error(self, mock_webclient_class):
         """Test post_result with error"""
         # Setup mock
@@ -164,7 +170,7 @@ class TestSlackTool(unittest.TestCase):
         self.assertTrue(result["success"])
         mock_client.chat_postMessage.assert_called_once()
         # Should not call files_upload for errors
-        mock_client.files_upload.assert_not_called()
+        mock_client.files_upload_v2.assert_not_called()
 
 
 class TestSlackToolBackwardsCompatibility(unittest.TestCase):
@@ -172,7 +178,7 @@ class TestSlackToolBackwardsCompatibility(unittest.TestCase):
     
     def test_post_result_without_charts_parameter(self):
         """Test that post_result works without charts parameter (backwards compatible)"""
-        with patch('capstone_slackbot.mcp_server.tools.slack.WebClient') as mock_webclient_class:
+        with patch('slack_sdk.WebClient') as mock_webclient_class:
             mock_client = MagicMock()
             mock_client.chat_postMessage.return_value = {"ts": "1234567890.123456"}
             mock_webclient_class.return_value = mock_client
