@@ -337,8 +337,9 @@ class DatabaseQueryTool:
                     pai_dataframes.append(pai_df)
                 
                 # Use pai.chat() for querying multiple dataframes (v3 API)
+                # Note: pai.chat() doesn't accept config parameter - config is set on DataFrame creation
                 if len(pai_dataframes) > 1:
-                    result = pai.chat(natural_language_query, *pai_dataframes, config=config)
+                    result = pai.chat(natural_language_query, *pai_dataframes)
                 else:
                     # Single dataframe: use .chat() method directly
                     result = pai_dataframes[0].chat(natural_language_query)
@@ -482,8 +483,9 @@ class DatabaseQueryTool:
                     pai_dataframes.append(pai_df)
                 
                 # Use pai.chat() for querying multiple dataframes (v3 API)
+                # Note: pai.chat() doesn't accept config parameter - config is set on DataFrame creation
                 if len(pai_dataframes) > 1:
-                    result = pai.chat(natural_language_query, *pai_dataframes, config=config)
+                    result = pai.chat(natural_language_query, *pai_dataframes)
                 else:
                     # Single dataframe: use .chat() method directly
                     result = pai_dataframes[0].chat(natural_language_query)

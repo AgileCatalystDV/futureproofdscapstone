@@ -54,9 +54,9 @@ class PandaAIAgent:
         logger.info(f"Processing query: '{natural_language_query[:100]}{'...' if len(natural_language_query) > 100 else ''}'")
         
         # Step 1: Validate query
-        validation = self._validate_query(natural_language_query, post_to_slack, slack_channel)
-        if not validation:
-            return validation
+        validation_result = self._validate_query(natural_language_query, post_to_slack, slack_channel)
+        if validation_result is not None:  # None means validation passed, dict means error
+            return validation_result
         
         # Step 2: Execute query
         query_result = self._execute_query(natural_language_query)

@@ -279,7 +279,14 @@ class SlackBotHandler:
             # Process query
             result = self._process_query(query)
             
-            if result["success"]:
+            # Safety check: ensure result is not None
+            if not result:
+                logger.error("❌ Query processing returned None")
+                say("❌ Query failed: Internal error - no response from agent")
+                logger.info(f"{'='*60}\n")
+                return
+            
+            if result.get("success"):
                 query_result = result["query_result"]
                 charts = query_result.get("charts")
                 
@@ -331,7 +338,14 @@ class SlackBotHandler:
             # Process query
             result = self._process_query(query)
             
-            if result["success"]:
+            # Safety check: ensure result is not None
+            if not result:
+                logger.error("❌ Query processing returned None")
+                say("❌ Query failed: Internal error - no response from agent")
+                logger.info(f"{'='*60}\n")
+                return
+            
+            if result.get("success"):
                 query_result = result["query_result"]
                 charts = query_result.get("charts")
                 
