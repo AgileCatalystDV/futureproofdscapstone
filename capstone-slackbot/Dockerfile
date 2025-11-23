@@ -42,5 +42,5 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
 # Default command (can be overridden in docker-compose)
-CMD ["python", "-m", "slack_bot.handler"]
+CMD ["python", "-m", "capstone_slackbot.main"]
 

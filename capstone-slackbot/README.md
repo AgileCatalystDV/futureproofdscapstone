@@ -129,15 +129,39 @@ capstone-slackbot/
 
 ### Docker Setup
 
-1. **Build and run:**
+1. **Create `.env` file** (see `.env.example`):
    ```bash
-   /
+   cp .env.example .env
+   # Edit .env with your tokens and database credentials
    ```
 
-2. **View logs:**
+2. **Build and run:**
+   ```bash
+   docker-compose up --build
+   ```
+
+3. **Run in background:**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **View logs:**
    ```bash
    docker-compose logs -f slack-bot
    ```
+
+5. **Stop containers:**
+   ```bash
+   docker-compose down
+   ```
+
+**Note**: The Docker setup includes:
+- Slack bot service (main application)
+- Optional MCP server service (separate container)
+- Network configuration for inter-container communication
+- Volume mounts for semantic model and configuration files
+
+See [DOCKER_SETUP.md](DOCKER_SETUP.md) for detailed Docker configuration.
 
 ## 📖 Usage
 

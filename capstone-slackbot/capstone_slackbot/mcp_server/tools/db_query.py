@@ -87,7 +87,7 @@ class DatabaseQueryTool:
         """Create direct PostgreSQL connection"""
         try:
             import psycopg2
-            from sqlalchemy import create_engine
+            from sqlalchemy import create_engine, text
             
             # Load PostgreSQL credentials from environment
             # Support both POSTGRES_* and POSTGRESS_* (with double 's') variants
@@ -108,14 +108,28 @@ class DatabaseQueryTool:
             
             # Create SQLAlchemy engine for pandas
             connection_string = f"postgresql://{postgres_user}:{postgres_pass}@{postgres_host}:{postgres_port}/{postgres_db}"
-            self.engine = create_engine(connection_string)
             
-            print(f"✓ Connected to PostgreSQL: {postgres_host}:{postgres_port}/{postgres_db}")
-            return "connected"  # Marker that we have a real connection
+            # Test connection before creating engine
+            try:
+                test_engine = create_engine(connection_string, connect_args={"connect_timeout": 5})
+                with test_engine.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+                self.engine = test_engine
+                print(f"✓ Connected to PostgreSQL: {postgres_host}:{postgres_port}/{postgres_db}")
+                return "connected"  # Marker that we have a real connection
+            except Exception as conn_error:
+                error_msg = f"Failed to connect to PostgreSQL at {postgres_host}:{postgres_port}/{postgres_db}: {str(conn_error)}"
+                print(f"❌ {error_msg}")
+                print("⚠️  Falling back to mock database")
+                raise ConnectionError(error_msg) from conn_error
+        except ValueError as ve:
+            # Re-raise ValueError (missing env vars) as-is
+            raise
         except Exception as e:
-            print(f"❌ Failed to connect to PostgreSQL: {e}")
+            error_msg = f"Unexpected error during PostgreSQL connection setup: {str(e)}"
+            print(f"❌ {error_msg}")
             print("⚠️  Falling back to mock database")
-            return None
+            raise RuntimeError(error_msg) from e
     
     def _load_schema(self) -> Dict:
         """Load schema YAML"""
@@ -366,6 +380,22 @@ class DatabaseQueryTool:
                 "charts": new_charts if new_charts else None
             }
             
+        except ValueError as ve:
+            # Re-raise ValueError (e.g., missing API key) as-is
+            return {
+                "success": False,
+                "error": str(ve),
+                "result": None,
+                "query": natural_language_query
+            }
+        except ConnectionError as ce:
+            # Database connection errors
+            return {
+                "success": False,
+                "error": f"Database connection failed: {str(ce)}",
+                "result": None,
+                "query": natural_language_query
+            }
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
@@ -385,6 +415,7 @@ class DatabaseQueryTool:
                 "success": False,
                 "error": error_msg,
                 "result": None,
+                "query": natural_language_query,
                 "traceback": error_trace
             }
     
@@ -512,6 +543,22 @@ class DatabaseQueryTool:
                 "charts": new_charts if new_charts else None
             }
             
+        except ValueError as ve:
+            # Re-raise ValueError (e.g., missing API key) as-is
+            return {
+                "success": False,
+                "error": str(ve),
+                "result": None,
+                "query": natural_language_query
+            }
+        except ConnectionError as ce:
+            # Database connection errors
+            return {
+                "success": False,
+                "error": f"Database connection failed: {str(ce)}",
+                "result": None,
+                "query": natural_language_query
+            }
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
@@ -531,6 +578,7 @@ class DatabaseQueryTool:
                 "success": False,
                 "error": error_msg,
                 "result": None,
+                "query": natural_language_query,
                 "traceback": error_trace
             }
 

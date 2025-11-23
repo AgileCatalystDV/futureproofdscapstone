@@ -12,20 +12,25 @@ Capstone Slack Bot is a natural language database query system that enables user
 4. **Slack Integration**: Seamless integration with Slack for easy access
 
 ### Key Features
-- **PandaAI Integration**: Uses LiteLLM with GPT-4o-mini for natural language processing (note OPENAI_MODEL = "gpt-4.1-mini")
+- **PandasAI v3 Integration**: Uses LiteLLM with GPT-4o-mini for natural language processing (note OPENAI_MODEL = "gpt-4.1-mini")
+  - Uses `pai.DataFrame()` and `pai.chat()` API (PandasAI v3)
+  - Configured to use only pandas operations (no SQL/DuckDB)
+  - Supports multi-table queries via `pai.chat()` with multiple DataFrames
 - **Guardrails System**: Multi-layer security including:
   - SQL keyword blocking
-  - Encoding bypass protection
+  - Encoding bypass protection (URL, HTML entity, Hex, Base64, Null bytes, Control characters)
   - Query complexity limits
   - Table/column whitelisting
 - **Database Support**: 
   - Mock database for development
-  - Direct PostgreSQL connection
-  - MCP DatabaseToolbox support (optional)
-- **Caching**: Intelligent dataframe caching to reduce database load
+  - Direct PostgreSQL connection (via psycopg2/sqlalchemy)
+  - MCP DatabaseToolbox support (optional, reserved for future use)
+- **Caching**: Intelligent dataframe caching with TTL to reduce database load
+- **Chart Generation**: Automatic detection and upload of generated charts to Slack
 - **Slack Integration**: 
   - Real Slack bot with slash commands and mentions
   - Mock CLI mode for development/testing
+  - DM fallback for chart uploads when channel access is unavailable
 
 ### Technical Stack
 - **Language**: Python 3.11
